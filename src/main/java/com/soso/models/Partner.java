@@ -1,16 +1,59 @@
 package com.soso.models;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 /**
  * Created by Garik Kalashyan on 3/8/2017.
  */
 public class Partner {
     private Integer id;
-    private String partner_name;
-    private String  telephone;
+    private String name;
+    private String telephone;
     private boolean isAdmin;
     private Integer serviceId;
-    private String partner_username;
+    private String username;
     private String password;
+    private String notices;
+    private BigDecimal longitude;
+    private BigDecimal latitude;
+    private String address;
+    private String imgpath;
+    private List<String> images;
+    private List<Feedback> feedbacks;
+    private List<String> followers;
+
+    public Partner(){
+
+    }
+
+    public Partner(Integer id, String telephone, String address) {
+        this.id = id;
+        this.telephone = telephone;
+        this.address = address;
+    }
+
+    public Partner(Integer id, String name, String telephone,
+                   boolean isAdmin, Integer serviceId, String username,
+                   String password, String notices, BigDecimal longitude,
+                   BigDecimal latitude, String address, String imgpath,
+                   List<String> images, List<Feedback> feedbacks, List<String> followers) {
+        this.id = id;
+        this.name = name;
+        this.telephone = telephone;
+        this.isAdmin = isAdmin;
+        this.serviceId = serviceId;
+        this.username = username;
+        this.password = password;
+        this.notices = notices;
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.address = address;
+        this.imgpath = imgpath;
+        this.images = images;
+        this.feedbacks = feedbacks;
+        this.followers = followers;
+    }
 
     public Integer getId() {
         return id;
@@ -20,12 +63,20 @@ public class Partner {
         this.id = id;
     }
 
-    public String getPartner_name() {
-        return partner_name;
+    public String getImgpath() {
+        return imgpath;
     }
 
-    public void setPartner_name(String partner_name) {
-        this.partner_name = partner_name;
+    public void setImgpath(String imgpath) {
+        this.imgpath = imgpath;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String partner_name) {
+        this.name = partner_name;
     }
 
     public String getTelephone() {
@@ -52,12 +103,12 @@ public class Partner {
         this.serviceId = serviceId;
     }
 
-    public String getPartner_username() {
-        return partner_username;
+    public String getUsername() {
+        return username;
     }
 
-    public void setPartner_username(String partner_username) {
-        this.partner_username = partner_username;
+    public void setUsername(String partner_username) {
+        this.username = partner_username;
     }
 
     public String getPassword() {
@@ -66,5 +117,61 @@ public class Partner {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getNotices() {
+        return notices;
+    }
+
+    public void setNotices(String notices) {
+        this.notices = notices;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(BigDecimal longitude) {
+        this.longitude = longitude;
+    }
+
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public List<String> getImages() {
+        return images;
+    }
+
+    public void setImages(List<String> images) {
+        this.images = images;
+    }
+
+    public List<Feedback> getFeedbacks() {
+        return feedbacks;
+    }
+
+    public void setFeedbacks(List<Feedback> feedbacks) {
+        this.feedbacks = feedbacks;
+    }
+
+    public List<String> getFollowers() {
+        return followers;
+    }
+
+    public void setFollowers(List<String> followers) {
+        this.followers = followers;
     }
 }

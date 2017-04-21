@@ -7,7 +7,7 @@ import java.util.Map;
  * Created by Garik Kalashyan on 3/8/2017.
  */
 public class JsonMapBuilder {
-    private static Map<String,Object> map = new HashMap<>();
+    private Map<String,Object> map = new HashMap<>();
 
     public JsonMapBuilder() {
     }
