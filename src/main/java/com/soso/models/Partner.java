@@ -22,7 +22,7 @@ public class Partner {
     private List<String> images;
     private List<Feedback> feedbacks;
     private List<String> followers;
-
+    private boolean reservable;
     public Partner(){
 
     }
@@ -37,7 +37,7 @@ public class Partner {
                    boolean isAdmin, Integer serviceId, String username,
                    String password, String notices, BigDecimal longitude,
                    BigDecimal latitude, String address, String imgpath,
-                   List<String> images, List<Feedback> feedbacks, List<String> followers) {
+                   List<String> images, List<Feedback> feedbacks, List<String> followers,boolean reservable) {
         this.id = id;
         this.name = name;
         this.telephone = telephone;
@@ -53,6 +53,15 @@ public class Partner {
         this.images = images;
         this.feedbacks = feedbacks;
         this.followers = followers;
+        this.reservable = reservable;
+    }
+
+    public boolean isReservable() {
+        return reservable;
+    }
+
+    public void setReservable(boolean reservable) {
+        this.reservable = reservable;
     }
 
     public Integer getId() {
