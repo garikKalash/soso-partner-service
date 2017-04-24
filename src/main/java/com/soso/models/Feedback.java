@@ -1,5 +1,6 @@
 package com.soso.models;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -9,12 +10,13 @@ import java.math.BigDecimal;
 public class Feedback{
     private Integer id;
     private String context;
-    private BigDecimal rate;
+    private Integer rate;
     private Integer partnerId;
     private Integer clientId;
 
+    public Feedback(){}
 
-    public Feedback(Integer id, String context, BigDecimal rate, Integer partnerId, Integer clientId) {
+    public Feedback(Integer id, String context, Integer rate, Integer partnerId, Integer clientId) {
         this.id = id;
         this.context = context;
         this.rate = rate;
@@ -38,11 +40,11 @@ public class Feedback{
         this.context = context;
     }
 
-    public BigDecimal getRate() {
+    public Integer getRate() {
         return rate;
     }
 
-    public void setRate(BigDecimal rate) {
+    public void setRate(Integer rate) {
         this.rate = rate;
     }
 

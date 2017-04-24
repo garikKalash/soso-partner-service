@@ -2,6 +2,7 @@ package com.soso.dto;
 
 import com.soso.models.Feedback;
 import com.soso.models.Partner;
+import com.soso.models.Request;
 import com.soso.service.BaseSecurity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -20,11 +21,17 @@ import java.util.Map;
 @Repository
 public class PartnerDAO {
     private final String GET_PARTNER_BY_ID_QUERY = "SELECT * FROM public.Partner WHERE id= :id";
+    private final String GET_PHOTO_BY_ID_QUERY = "SELECT image_path FROM public.f_partnerimages WHERE id= :id";
+    private final String DELETE_PHOTO_BY_ID_QUERY = "DELETE FROM public.f_partnerimages WHERE id= :id";
+    private final String DELETE_RESERVATION_BY_ID_QUERY = "DELETE FROM public.f_partnerrequests WHERE id= :id";
+    private final String GET_PARTNERS_BY_SERVICE_ID_QUERY = "SELECT * FROM public.Partner WHERE serviceid= :serviceid";
     private final String GET_FEEDBACKS_PARTNER_BY_ID_QUERY = "SELECT * FROM public.f_partnerfeedbacks WHERE partnerid = :partnerid";
-    private final String GET_IMAGES_PARTNER_BY_ID_QUERY = "SELECT image_path FROM public.f_partnerimages WHERE partner_id = :partnerid";
+    private final String GET_RESERVATIONS_BY_PARTNER_ID_QUERY = "SELECT * FROM public.f_partnerrequests WHERE partnerid = :partnerid";
+    private final String GET_RESERVATIONS_BY_CLIENT_ID_QUERY = "SELECT * FROM public.f_partnerrequests WHERE clientid = :clientid";
+    private final String GET_IMAGES_PARTNER_BY_ID_QUERY = "SELECT id FROM public.f_partnerimages WHERE partner_id = :partnerid";
     private final String GET_FOLLOWERS_PARTNER_BY_ID_QUERY = "SELECT * FROM public.f_partnerimages WHERE partner_id = :partnerid";
     private final String SIGN_IN_PARTNER_QUERY = "SELECT * FROM public.Partner WHERE password = :password AND telephone = :phonenumber";
-    private final String UPDATE_LOGO_SRC_PATH_OF_PARTNER_QUERY = "UPDATE public.Partner SET imgpath = :imgpath WHERE id = :id";
+    private final String UPDATE_LOGO_SRC_PATH_OF_PARTNER_QUERY = "UPDATE public.Partner SET imgid = :imgid WHERE id = :id";
     private final String UPDATE_TELEPHONE_OF_PARTNER_QUERY = "UPDATE public.Partner SET telephone = :telephone  WHERE id = :id";
     private final String UPDATE_LONG_ADDRESS_OF_PARTNER_QUERY = "UPDATE public.Partner SET address = :address,longitude = :longitude, latitude = :latitude  WHERE id = :id";
     private final String UPDATE_NOTICE_OF_PARTNER_QUERY = "UPDATE public.Partner SET notices = :notice  WHERE id = :id";
@@ -55,7 +62,7 @@ public class PartnerDAO {
 
     }
 
-    public String addPhotoToPartnier(Integer partnerId, String imgPath) {
+    public Integer addPhotoToPartnier(Integer partnerId, String imgPath) {
         String addPhotoQuery = "SELECT addphototopartnier ( :partnerId, :imgPath)";
 
         Map<String, Object> paramMap = new HashMap<>();
@@ -63,7 +70,7 @@ public class PartnerDAO {
         paramMap.put("imgPath", imgPath);
 
 
-        return getNamedParameterJdbcOperations().queryForObject(addPhotoQuery, paramMap, String.class);
+        return getNamedParameterJdbcOperations().queryForObject(addPhotoQuery, paramMap, Integer.class);
 
     }
 
@@ -90,10 +97,10 @@ public class PartnerDAO {
         return responsePartner == null ? null : responsePartner.getId();
     }
 
-    public void updateLogosrcPathOfPartner(Integer partnerId, String path) {
+    public void updateLogosrcPathOfPartner(Integer partnerId, Integer imgid) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", partnerId);
-        paramMap.put("imgpath", path);
+        paramMap.put("imgid", imgid);
         getNamedParameterJdbcOperations().update(UPDATE_LOGO_SRC_PATH_OF_PARTNER_QUERY, paramMap);
     }
 
@@ -134,13 +141,69 @@ public class PartnerDAO {
     public List<Feedback> loadFeedbacksByPartnerId(Integer partnerId) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("partnerid", partnerId);
-        return getNamedParameterJdbcOperations().queryForList(GET_FEEDBACKS_PARTNER_BY_ID_QUERY, paramMap, Feedback.class);
+        return getNamedParameterJdbcOperations().query(GET_FEEDBACKS_PARTNER_BY_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Feedback.class));
     }
 
-    public List<String> loadPhotosByPartnerId(Integer partnerId) {
+    public List<Integer> loadPhotosByPartnerId(Integer partnerId) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("partnerid", partnerId);
-        return getNamedParameterJdbcOperations().queryForList(GET_IMAGES_PARTNER_BY_ID_QUERY, paramMap, String.class);
+        return getNamedParameterJdbcOperations().queryForList(GET_IMAGES_PARTNER_BY_ID_QUERY, paramMap, Integer.class);
+    }
+
+    public List<Partner> getPartnersByServiceId(Integer serviceId){
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("serviceid", serviceId);
+        return getNamedParameterJdbcOperations().query(GET_PARTNERS_BY_SERVICE_ID_QUERY,paramMap, new BeanPropertyRowMapper<>(Partner.class));
+    }
+
+    public String getPhotoById(Integer photoId) {
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("id", photoId);
+        return getNamedParameterJdbcOperations().queryForObject(GET_PHOTO_BY_ID_QUERY, paramMap, String.class);
+
+    }
+
+    public void deletePhotoById(Integer photoId) {
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("id", photoId);
+       getNamedParameterJdbcOperations().update(DELETE_PHOTO_BY_ID_QUERY, paramMap);
+
+    }
+
+    public Integer addReservation(Request request){
+        String addReservationQuery = "SELECT addreservetopartnier ( :clientid, :partnerid, :starttime, :description, :status, :responsetext, :duration)";
+
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("clientid", request.getClientId());
+        paramMap.put("partnerid", request.getPartnerId());
+        paramMap.put("starttime", request.getStartTime());
+        paramMap.put("description", request.getDescription());
+        paramMap.put("status", request.getStatus());
+        paramMap.put("responsetext", request.getResponseText());
+        paramMap.put("duration", request.getDuration());
+
+        return getNamedParameterJdbcOperations().queryForObject(addReservationQuery, paramMap, Integer.class);
+
+    }
+
+    public List<Request> getReservationsByPartnerId(Integer partnerId){
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("partnerid", partnerId);
+        return getNamedParameterJdbcOperations().query(GET_RESERVATIONS_BY_PARTNER_ID_QUERY,paramMap, new BeanPropertyRowMapper<>(Request.class));
+
+    }
+
+    public List<Request> getReservationsByClientId(Integer clientId){
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("clientid", clientId);
+        return getNamedParameterJdbcOperations().query(GET_RESERVATIONS_BY_CLIENT_ID_QUERY,paramMap, new BeanPropertyRowMapper<>(Request.class));
+
+    }
+
+    public void deleteReservationById(Integer reserveId){
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("id", reserveId);
+        getNamedParameterJdbcOperations().update(DELETE_RESERVATION_BY_ID_QUERY, paramMap);
     }
 
 

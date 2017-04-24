@@ -18,11 +18,14 @@ public class Partner {
     private BigDecimal longitude;
     private BigDecimal latitude;
     private String address;
+    private Integer imgId;
     private String imgpath;
     private List<String> images;
     private List<Feedback> feedbacks;
     private List<String> followers;
+
     private boolean reservable;
+
     public Partner(){
 
     }
@@ -36,7 +39,7 @@ public class Partner {
     public Partner(Integer id, String name, String telephone,
                    boolean isAdmin, Integer serviceId, String username,
                    String password, String notices, BigDecimal longitude,
-                   BigDecimal latitude, String address, String imgpath,
+                   BigDecimal latitude, String address,Integer imgId, String imgpath,
                    List<String> images, List<Feedback> feedbacks, List<String> followers,boolean reservable) {
         this.id = id;
         this.name = name;
@@ -49,6 +52,7 @@ public class Partner {
         this.longitude = longitude;
         this.latitude = latitude;
         this.address = address;
+        this.imgId = imgId;
         this.imgpath = imgpath;
         this.images = images;
         this.feedbacks = feedbacks;
@@ -66,6 +70,14 @@ public class Partner {
 
     public Integer getId() {
         return id;
+    }
+
+    public Integer getImgId() {
+        return imgId;
+    }
+
+    public void setImgId(Integer imgId) {
+        this.imgId = imgId;
     }
 
     public void setId(Integer id) {
