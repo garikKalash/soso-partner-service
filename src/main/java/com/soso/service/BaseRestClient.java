@@ -38,7 +38,7 @@ public class BaseRestClient {
 
 
     private class ServicesDetailService {
-        private String baseServicesDetailServiceUrl = "http://localhost:9011/";
+        private String baseServicesDetailServiceUrl = "https://pure-badlands-72083.herokuapp.com/";
 
         private String getInfoByServiceId(Integer serviceId){
             return restTemplate.getForObject(baseServicesDetailServiceUrl + "serviceDetails/" + serviceId,String.class);
