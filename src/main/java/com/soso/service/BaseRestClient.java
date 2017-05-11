@@ -19,7 +19,7 @@ public class BaseRestClient {
         initializeBaseUrl(serviceId);
        }
 
-    @PostConstruct
+
     protected void initializeBaseUrl(Integer serviceId){
         String serviceDetailByIdJSONString =  new ServicesDetailService().getInfoByServiceId(serviceId);
         destinationService =  JsonConverter.getServiceInfoFromJSONString(serviceDetailByIdJSONString);

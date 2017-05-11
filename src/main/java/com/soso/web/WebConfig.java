@@ -1,5 +1,8 @@
 package com.soso.web;
 
+import com.soso.models.ServiceInfo;
+import com.soso.service.PartnerService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -21,6 +24,9 @@ import javax.sql.DataSource;
 public class WebConfig
         extends WebMvcConfigurerAdapter {
 
+     @Autowired
+     private PartnerService partnerService;
+
     /** properties for heroku db
      *   Host= ec2-54-247-99-159.eu-west-1.compute.amazonaws.com
      *   Database= dlu28gghspr52
@@ -39,11 +45,14 @@ public class WebConfig
 
     @Bean
     public DataSource dataSource() {
+
+        ServiceInfo myInfo =  partnerService.getDestinationService();
+
         DriverManagerDataSource ds = new DriverManagerDataSource();
-        ds.setDriverClassName("org.postgresql.Driver");
-        ds.setUrl("jdbc:postgres://iwrfrdlugrxtfd:568e49d657f1e72020222cbc9637dce8e8545a4583afd82a398d415271ab7532@ec2-54-247-99-159.eu-west-1.compute.amazonaws.com:5432/dlu28gghspr52?sslmode=require&ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&username=iwrfrdlugrxtfd&password=568e49d657f1e72020222cbc9637dce8e8545a4583afd82a398d415271ab7532&characterEncoding=UTF-8&useUnicode=yes");
-        ds.setUsername("iwrfrdlugrxtfd");
-        ds.setPassword("568e49d657f1e72020222cbc9637dce8e8545a4583afd82a398d415271ab7532");
+        ds.setDriverClassName(myInfo.getDbConnectionMetaData().getDriverClassName());
+        ds.setUrl(myInfo.getDbConnectionMetaData().getUrl());
+        ds.setUsername(myInfo.getDbConnectionMetaData().getUsername());
+        ds.setPassword(myInfo.getDbConnectionMetaData().getPassword());
         return ds;
     }
 

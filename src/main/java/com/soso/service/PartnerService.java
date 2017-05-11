@@ -6,8 +6,10 @@ import com.soso.service.authentication.AuthenticationTokenService;
 import com.soso.service.common_data.CommonDataService;
 import com.soso.service.eventListener.EventListenerClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
+import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -19,7 +21,7 @@ import java.util.List;
  */
 
 @Repository
-public class PartnerService {
+public class PartnerService extends BaseRestClient{
     private final Integer selfId = 2;
     private final CommonDataService commonDataService = new CommonDataService(4);
     private final AuthenticationTokenService authenticationTokenService = new AuthenticationTokenService(3);
@@ -27,6 +29,11 @@ public class PartnerService {
 
     @Autowired
     private PartnerDAO partnerDAO;
+
+    @Autowired
+    public PartnerService(@Value("${partnerservice.id}") Integer defaultId) {
+        super(2);
+    }
 
     public boolean isValidToken(Integer itemId, String token) {
         return authenticationTokenService.isValidToken(selfId, itemId, token);
