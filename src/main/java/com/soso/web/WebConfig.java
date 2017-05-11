@@ -24,8 +24,6 @@ import javax.sql.DataSource;
 public class WebConfig
         extends WebMvcConfigurerAdapter {
 
-     @Autowired
-     private PartnerService partnerService;
 
     /** properties for heroku db
      *   Host= ec2-54-247-99-159.eu-west-1.compute.amazonaws.com
@@ -45,7 +43,7 @@ public class WebConfig
 
     @Bean
     public DataSource dataSource() {
-
+        PartnerService partnerService = new PartnerService(2);
         ServiceInfo myInfo =  partnerService.getDestinationService();
 
         DriverManagerDataSource ds = new DriverManagerDataSource();
