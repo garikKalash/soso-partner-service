@@ -125,12 +125,12 @@ public class PartnerController {
     @ResponseBody
     public void getPartnerAccountPage(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response) throws IOException {
         Partner partner = partnerService.getPartnerById(partnerId);
-        response.getWriter().flush();
-
-        String accountImgIdJson = JsonConverter.toJson(new JsonMapBuilder()
-                .add("imageId", partner.getImgId() != null ? partner.getImgId() : 39)
-                .build()); // 39 is the id of default account image path
-        response.getWriter().write(accountImgIdJson);
+        if (partner != null) {
+            String accountImgIdJson = JsonConverter.toJson(new JsonMapBuilder()
+                    .add("imageId", partner.getImgId() != null ? partner.getImgId() : 39)
+                    .build()); // 39 is the id of default account image path
+            response.getWriter().write(accountImgIdJson);
+        }
     }
 
     @RequestMapping(value = "/addImageToPartnier", method = RequestMethod.POST, consumes = {"multipart/form-data"})

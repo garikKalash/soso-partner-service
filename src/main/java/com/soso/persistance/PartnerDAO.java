@@ -175,9 +175,13 @@ public class PartnerDAO {
     }
 
     public Partner getPartnerById(Integer partnerId) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("id", partnerId);
-        return getNamedParameterJdbcOperations().queryForObject(GET_PARTNER_BY_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Partner.class));
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("id", partnerId);
+            return getNamedParameterJdbcOperations().queryForObject(GET_PARTNER_BY_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Partner.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public Partner getPartnerByTelephone(String telephone) {
@@ -191,8 +195,7 @@ public class PartnerDAO {
     }
 
 
-
-   public Partner getPartnerByUsername(String username) {
+    public Partner getPartnerByUsername(String username) {
         try {
             Map<String, Object> paramMap = new HashMap<>();
             paramMap.put("username", username);
@@ -204,45 +207,68 @@ public class PartnerDAO {
 
 
     public Partner getPartnerMainDetailsById(Integer partnerId) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("id", partnerId);
-        return getNamedParameterJdbcOperations().queryForObject("SELECT name,telephone,address,serviceid,imgid FROM public.Partner WHERE id= :id", paramMap, new BeanPropertyRowMapper<>(Partner.class));
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("id", partnerId);
+            return getNamedParameterJdbcOperations().queryForObject("SELECT name,telephone,address,serviceid,imgid FROM public.Partner WHERE id= :id", paramMap, new BeanPropertyRowMapper<>(Partner.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public List<Feedback> loadFeedbacksByPartnerId(Integer partnerId) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("partnerid", partnerId);
-        return getNamedParameterJdbcOperations().query(GET_FEEDBACKS_PARTNER_BY_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Feedback.class));
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("partnerid", partnerId);
+            return getNamedParameterJdbcOperations().query(GET_FEEDBACKS_PARTNER_BY_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Feedback.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public List<PhotoDto> loadPhotosByPartnerId(Integer partnerId) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("partnerid", partnerId);
-        return getNamedParameterJdbcOperations().query(GET_IMAGES_PARTNER_BY_ID_QUERY, paramMap,new BeanPropertyRowMapper<>(PhotoDto.class));
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("partnerid", partnerId);
+            return getNamedParameterJdbcOperations().query(GET_IMAGES_PARTNER_BY_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(PhotoDto.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public List<Partner> getPartnersByServiceId(Integer serviceId) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("serviceid", serviceId);
-        return getNamedParameterJdbcOperations().query(GET_PARTNERS_BY_SERVICE_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Partner.class));
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("serviceid", serviceId);
+            return getNamedParameterJdbcOperations().query(GET_PARTNERS_BY_SERVICE_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Partner.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public List<Partner> getPartnersByServiceTermId(Integer serviceId, String term) {
-        StringBuilder builder = new StringBuilder("SELECT * FROM public.partner WHERE serviceid =")
-                .append(serviceId)
-                .append(" AND username LIKE ")
-                .append("'%")
-                .append(term)
-                .append("%'");
+        try {
+            StringBuilder builder = new StringBuilder("SELECT * FROM public.partner WHERE serviceid =")
+                    .append(serviceId)
+                    .append(" AND username LIKE ")
+                    .append("'%")
+                    .append(term)
+                    .append("%'");
 
-        return getNamedParameterJdbcOperations().query(builder.toString(), new BeanPropertyRowMapper<>(Partner.class));
+            return getNamedParameterJdbcOperations().query(builder.toString(), new BeanPropertyRowMapper<>(Partner.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public String getPhotoById(Integer photoId) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("id", photoId);
-        return getNamedParameterJdbcOperations().queryForObject(GET_PHOTO_BY_ID_QUERY, paramMap, String.class);
-
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("id", photoId);
+            return getNamedParameterJdbcOperations().queryForObject(GET_PHOTO_BY_ID_QUERY, paramMap, String.class);
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public void deletePhotoById(Integer photoId) {
@@ -252,44 +278,58 @@ public class PartnerDAO {
     }
 
     public List<Request> getAllRequests() {
-        return getNamedParameterJdbcOperations().query("SELECT * FROM f_partnerrequests WHERE status = 1", new BeanPropertyRowMapper<>(Request.class));
+        try {
+            return getNamedParameterJdbcOperations().query("SELECT * FROM f_partnerrequests WHERE status = 1", new BeanPropertyRowMapper<>(Request.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
 
     public Integer addReservation(Request request) {
-        String addReservationQuery = "SELECT addreservetopartnier ( :clientid, :partnerid, :starttime, :description, :status, :responsetext, :duration, :serviceid)";
+        try {
+            String addReservationQuery = "SELECT addreservetopartnier ( :clientid, :partnerid, :starttime, :description, :status, :responsetext, :duration, :serviceid)";
 
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("clientid", request.getClientId());
-        paramMap.put("partnerid", request.getPartnerId());
-        paramMap.put("starttime", request.getStartTime());
-        paramMap.put("description", request.getDescription());
-        paramMap.put("status", request.getStatus());
-        paramMap.put("responsetext", request.getResponseText());
-        paramMap.put("duration", request.getDuration());
-        paramMap.put("serviceid", request.getServiceId());
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("clientid", request.getClientId());
+            paramMap.put("partnerid", request.getPartnerId());
+            paramMap.put("starttime", request.getStartTime());
+            paramMap.put("description", request.getDescription());
+            paramMap.put("status", request.getStatus());
+            paramMap.put("responsetext", request.getResponseText());
+            paramMap.put("duration", request.getDuration());
+            paramMap.put("serviceid", request.getServiceId());
 
-        return getNamedParameterJdbcOperations().queryForObject(addReservationQuery, paramMap, Integer.class);
-
+            return getNamedParameterJdbcOperations().queryForObject(addReservationQuery, paramMap, Integer.class);
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public List<Request> getReservationsByPartnerId(Integer partnerId, Integer status) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("partnerid", partnerId);
-        paramMap.put("status", status);
-        return getNamedParameterJdbcOperations().query(GET_RESERVATIONS_BY_PARTNER_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Request.class));
-
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("partnerid", partnerId);
+            paramMap.put("status", status);
+            return getNamedParameterJdbcOperations().query(GET_RESERVATIONS_BY_PARTNER_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Request.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public List<Request> getReservationsByClientId(Integer clientId, Integer status) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("clientid", clientId);
-        paramMap.put("status", status);
-        return getNamedParameterJdbcOperations().query(GET_RESERVATIONS_BY_CLIENT_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Request.class));
-
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("clientid", clientId);
+            paramMap.put("status", status);
+            return getNamedParameterJdbcOperations().query(GET_RESERVATIONS_BY_CLIENT_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Request.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public void deleteReservationById(Integer reserveId) {
+
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", reserveId);
         getNamedParameterJdbcOperations().update(DELETE_RESERVATION_BY_ID_QUERY, paramMap);
@@ -318,11 +358,15 @@ public class PartnerDAO {
     }
 
     public Integer addFollowerToPartnier(Integer partnerId, Integer clientId) {
-        String addFollower = "SELECT addfollower ( :partnerId, :clientId)";
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("partnerId", partnerId);
-        paramMap.put("clientId", clientId);
-        return getNamedParameterJdbcOperations().queryForObject(addFollower, paramMap, Integer.class);
+        try {
+            String addFollower = "SELECT addfollower ( :partnerId, :clientId)";
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("partnerId", partnerId);
+            paramMap.put("clientId", clientId);
+            return getNamedParameterJdbcOperations().queryForObject(addFollower, paramMap, Integer.class);
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public List<Follower> getFollowersByPartnerId(Integer partnerId) {
@@ -332,26 +376,38 @@ public class PartnerDAO {
     }
 
     public List<Follower> getFollowersByClientId(Integer clientId) {
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("clientid", clientId);
-        return getNamedParameterJdbcOperations().query(LOAD_ALL_FOLLOWERS_BY_CLIENT_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Follower.class));
+        try {
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("clientid", clientId);
+            return getNamedParameterJdbcOperations().query(LOAD_ALL_FOLLOWERS_BY_CLIENT_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Follower.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public Follower getFollowerById(Integer id) {
-        Map<String, Object> paramMap = new HashMap();
-        paramMap.put("id", id);
-        return getNamedParameterJdbcOperations().queryForObject(GET_FOLLOWER_BY_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Follower.class));
+        try {
+            Map<String, Object> paramMap = new HashMap();
+            paramMap.put("id", id);
+            return getNamedParameterJdbcOperations().queryForObject(GET_FOLLOWER_BY_ID_QUERY, paramMap, new BeanPropertyRowMapper<>(Follower.class));
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
     public Integer addFeedbackToPartner(Feedback feedback) {
-        String addFeedbackQuery = "SELECT addfeedback (:_context, :_rate, :_partner_id, :_client_id, :_requestid)";
-        Map<String, Object> paramMap = new HashMap();
-        paramMap.put("_context", feedback.getContext());
-        paramMap.put("_rate", feedback.getRate());
-        paramMap.put("_partner_id", feedback.getPartnerId());
-        paramMap.put("_client_id", feedback.getClientId());
-        paramMap.put("_requestid", feedback.getRequestId());
-        return getNamedParameterJdbcOperations().queryForObject(addFeedbackQuery, paramMap, Integer.class);
+        try {
+            String addFeedbackQuery = "SELECT addfeedback (:_context, :_rate, :_partner_id, :_client_id, :_requestid)";
+            Map<String, Object> paramMap = new HashMap();
+            paramMap.put("_context", feedback.getContext());
+            paramMap.put("_rate", feedback.getRate());
+            paramMap.put("_partner_id", feedback.getPartnerId());
+            paramMap.put("_client_id", feedback.getClientId());
+            paramMap.put("_requestid", feedback.getRequestId());
+            return getNamedParameterJdbcOperations().queryForObject(addFeedbackQuery, paramMap, Integer.class);
+        } catch (EmptyResultDataAccessException ex) {
+            return null;
+        }
     }
 
 }
