@@ -22,7 +22,7 @@ import java.util.List;
 
 @Repository
 public class PartnerService extends BaseRestClient{
-    private final Integer selfId = 2;
+    private final Integer selfId;
     private final CommonDataService commonDataService = new CommonDataService(4);
     private final AuthenticationTokenService authenticationTokenService = new AuthenticationTokenService(3);
     private final EventListenerClient eventListenerClient = new EventListenerClient(6);
@@ -32,7 +32,8 @@ public class PartnerService extends BaseRestClient{
 
     @Autowired
     public PartnerService(@Value("${partnerservice.id}") Integer defaultId) {
-        super(2);
+        super(defaultId);
+        selfId = defaultId;
     }
 
     public boolean isValidToken(Integer itemId, String token) {
