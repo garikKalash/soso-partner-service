@@ -4,6 +4,7 @@ import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -14,24 +15,36 @@ import javax.servlet.MultipartConfigElement;
 import javax.sql.DataSource;
 
 @Configuration
+@ComponentScan
 @EnableWebMvc
-@ComponentScan("com.soso.controller")
+@PropertySource(value = { "classpath:application.properties" })
 public class WebConfig
         extends WebMvcConfigurerAdapter {
+
+    /** properties for heroku db
+     *   Host= ec2-54-247-99-159.eu-west-1.compute.amazonaws.com
+     *   Database= dlu28gghspr52
+     *   User= iwrfrdlugrxtfd
+     *   Port= 5432
+     *   Password=  568e49d657f1e72020222cbc9637dce8e8545a4583afd82a398d415271ab7532
+     *   URI=  postgres://iwrfrdlugrxtfd:568e49d657f1e72020222cbc9637dce8e8545a4583afd82a398d415271ab7532@ec2-54-247-99-159.eu-west-1.compute.amazonaws.com:5432/dlu28gghspr52
+     *   Heroku CLI= heroku pg:psql postgresql-dimensional-48496 --app soso-partner
+     *
+     */
+
+    @Bean
+    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
+    }
 
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource ds = new DriverManagerDataSource();
         ds.setDriverClassName("org.postgresql.Driver");
-        ds.setUrl("jdbc:postgresql://localhost:5432/soso-partner-service-db");
-        ds.setUsername("postgres");
-        ds.setPassword("0944477522gar");
+        ds.setUrl("jdbc:postgres://iwrfrdlugrxtfd:568e49d657f1e72020222cbc9637dce8e8545a4583afd82a398d415271ab7532@ec2-54-247-99-159.eu-west-1.compute.amazonaws.com:5432/dlu28gghspr52?sslmode=require&ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory&username=iwrfrdlugrxtfd&password=568e49d657f1e72020222cbc9637dce8e8545a4583afd82a398d415271ab7532&characterEncoding=UTF-8&useUnicode=yes");
+        ds.setUsername("iwrfrdlugrxtfd");
+        ds.setPassword("568e49d657f1e72020222cbc9637dce8e8545a4583afd82a398d415271ab7532");
         return ds;
-    }
-
-    @Bean
-    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
-        return new JdbcTemplate(dataSource);
     }
 
     @Bean

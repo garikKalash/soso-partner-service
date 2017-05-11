@@ -20,9 +20,10 @@ public class Partner {
     private String address;
     private Integer imgId;
     private String imgpath;
-    private List<String> images;
+    private List<PhotoDto> photoDtos;
     private List<Feedback> feedbacks;
     private List<String> followers;
+    private List<PartnerServiceDetail> services;
 
     private boolean reservable;
 
@@ -54,10 +55,25 @@ public class Partner {
         this.address = address;
         this.imgId = imgId;
         this.imgpath = imgpath;
-        this.images = images;
         this.feedbacks = feedbacks;
         this.followers = followers;
         this.reservable = reservable;
+    }
+
+    public List<PartnerServiceDetail> getServices() {
+        return services;
+    }
+
+    public void setServices(List<PartnerServiceDetail> services) {
+        this.services = services;
+    }
+
+    public List<PhotoDto> getPhotoDtos() {
+        return photoDtos;
+    }
+
+    public void setPhotoDtos(List<PhotoDto> photoDtos) {
+        this.photoDtos = photoDtos;
     }
 
     public boolean isReservable() {
@@ -170,14 +186,6 @@ public class Partner {
 
     public void setAddress(String address) {
         this.address = address;
-    }
-
-    public List<String> getImages() {
-        return images;
-    }
-
-    public void setImages(List<String> images) {
-        this.images = images;
     }
 
     public List<Feedback> getFeedbacks() {

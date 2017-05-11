@@ -14,10 +14,13 @@ public class Request {
     private Integer status;
     private String responseText;
     private Integer duration;
+    private Integer serviceId;
+    private boolean israted;
 
     public Request(){}
 
-    public Request(Integer id, Integer clientId, Integer partnerId, Date startTime, String description, Integer status, String responseText, Integer duration) {
+    public Request(Integer id, Integer clientId, Integer partnerId, Date startTime, String description, Integer status,
+                   String responseText, Integer duration, Integer serviceId,boolean israted) {
         this.id = id;
         this.clientId = clientId;
         this.partnerId = partnerId;
@@ -26,6 +29,8 @@ public class Request {
         this.status = status;
         this.responseText = responseText;
         this.duration = duration;
+        this.serviceId = serviceId;
+        this.israted = israted;
     }
 
     public Integer getId() {
@@ -44,6 +49,14 @@ public class Request {
         this.clientId = clientId;
     }
 
+    public Integer getServiceId() {
+        return serviceId;
+    }
+
+    public void setServiceId(Integer serviceId) {
+        this.serviceId = serviceId;
+    }
+
     public Integer getPartnerId() {
         return partnerId;
     }
@@ -60,7 +73,13 @@ public class Request {
         this.startTime = startTime;
     }
 
+    public boolean isIsrated() {
+        return israted;
+    }
 
+    public void setIsrated(boolean israted) {
+        this.israted = israted;
+    }
 
     public String getDescription() {
         return description;

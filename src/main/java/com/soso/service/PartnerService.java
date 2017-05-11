@@ -1,16 +1,17 @@
 package com.soso.service;
 
-import com.soso.dto.PartnerDAO;
-import com.soso.models.Feedback;
-import com.soso.models.Partner;
-import com.soso.models.Request;
+import com.soso.models.*;
+import com.soso.persistance.PartnerDAO;
 import com.soso.service.authentication.AuthenticationTokenService;
 import com.soso.service.common_data.CommonDataService;
+import com.soso.service.eventListener.EventListenerClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -22,23 +23,17 @@ public class PartnerService {
     private final Integer selfId = 2;
     private final CommonDataService commonDataService = new CommonDataService(4);
     private final AuthenticationTokenService authenticationTokenService = new AuthenticationTokenService(3);
+    private final EventListenerClient eventListenerClient = new EventListenerClient(6);
+
     @Autowired
     private PartnerDAO partnerDAO;
 
-    public boolean isValidToken(String token) {
-        return authenticationTokenService.isValidToken(selfId, token);
+    public boolean isValidToken(Integer itemId, String token) {
+        return authenticationTokenService.isValidToken(selfId, itemId, token);
     }
 
-    public void createToken(String token) {
-        authenticationTokenService.createToken(selfId, token);
-    }
-
-    public void removeToken(String token) {
-        authenticationTokenService.removeToken(selfId, token);
-    }
-
-    public Integer createPartner(Partner partner) {
-        return partnerDAO.create(partner);
+    public Integer addPartner(Partner partner) {
+        return partnerDAO.addPartner(partner);
     }
 
     public Partner getPartnerById(Integer partnerId) {
@@ -50,8 +45,8 @@ public class PartnerService {
     }
 
 
-    public Integer signInPartner(Partner partner) {
-        return partnerDAO.signin(partner);
+    public Integer signInPartner(String telephone, String password) {
+        return partnerDAO.signin(telephone, password);
     }
 
     public List<Partner> getAllPartners() {
@@ -64,6 +59,15 @@ public class PartnerService {
 
     public String getAllCountryCodesAsJsonString() {
         return commonDataService.getAllCountryCodesAsJSONString();
+    }
+
+
+    public Partner getPartnerByTelephone(String telephone) {
+        return partnerDAO.getPartnerByTelephone(telephone);
+    }
+
+    public Partner getPartnerByUsername(String username) {
+        return partnerDAO.getPartnerByUsername(username);
     }
 
 
@@ -95,33 +99,157 @@ public class PartnerService {
         return partnerDAO.addPhotoToPartnier(partnerId, imgPath);
     }
 
-    public List<Integer> getPhotosByParentId(Integer partnerId) {
+    public List<PhotoDto> getPhotosByParentId(Integer partnerId) {
         return partnerDAO.loadPhotosByPartnerId(partnerId);
     }
 
-    public String getPhotoById(Integer photoId){
+    public String getPhotoById(Integer photoId) {
         return partnerDAO.getPhotoById(photoId);
     }
 
-    public  void deletePhotoById(Integer photoId){
+    public void deletePhotoById(Integer photoId) {
         partnerDAO.deletePhotoById(photoId);
     }
 
-    public void deleteReservationById(Integer reserveId){
+    public void deleteReservationById(Integer reserveId) {
         partnerDAO.deleteReservationById(reserveId);
     }
 
-    public List<Request> getReservationsByClientId(Integer clientId){
-        return partnerDAO.getReservationsByClientId(clientId);
+    public List<Request> getReservationsByClientId(Integer clientId, Integer status) {
+        return partnerDAO.getReservationsByClientId(clientId, status);
     }
 
-    public List<Request> getReservationsByPartnerId(Integer partnierId){
-        return partnerDAO.getReservationsByPartnerId(partnierId);
+    public List<Request> getReservationsByPartnerId(Integer partnierId, Integer status) {
+        return partnerDAO.getReservationsByPartnerId(partnierId, status);
+    }
+
+    public void updateReserve(Request request) {
+        partnerDAO.updateReservation(request);
     }
 
 
-    public Integer addReservation(Request request){
+    public Integer addReservation(Request request) {
         return partnerDAO.addReservation(request);
     }
 
+    public void deleteFollowerByClientPartnerId(Integer clientId, Integer partnerId) {
+        partnerDAO.deleteFollowerByClientPartnerId(clientId, partnerId);
+    }
+
+    public Integer addFollowerToPartnier(Integer partnerId, Integer clientId) {
+        return partnerDAO.addFollowerToPartnier(partnerId, clientId);
+    }
+
+    public List<Follower> getFollowersByPartnerId(Integer partnerId) {
+        return partnerDAO.getFollowersByPartnerId(partnerId);
+    }
+
+    public List<Follower> getFollowersByClientId(Integer clientId) {
+        return partnerDAO.getFollowersByClientId(clientId);
+    }
+
+    public Integer addServiceDetailToPartner(Integer partnerid, Integer serviceId, Integer defaulttime, Integer price) {
+        return partnerDAO.addServiceToPartnier(partnerid, serviceId, defaulttime, price);
+    }
+
+    public Integer updatePartnerServiceDetail(PartnerServiceDetail partnerServiceDetail) {
+        return partnerDAO.updateServiceDetailForPartner(partnerServiceDetail);
+    }
+
+    public void deletePartnerServiceDetail(Integer itemId) {
+        partnerDAO.deletePartnerService(itemId);
+    }
+
+    public List<PartnerServiceDetail> getPartnerServiceDetailsByPartner(Integer itemId) {
+        return partnerDAO.getAllServicesByPartner(itemId);
+    }
+
+    public Follower getFollowerById(Integer id) {
+        return partnerDAO.getFollowerById(id);
+    }
+
+
+    public List<EventDto> getAutoCompletedRequests() {
+        List<Request> requests = partnerDAO.getAllRequests();
+        List<EventDto> result = new ArrayList<>();
+        for (Request request : requests) {
+            if (isNotCompleted(request) && needAutoCompleteRequest(request)) {
+                request.setStatus(3);
+                partnerDAO.updateReservation(request);
+                EventDto eventDto = new EventDto(null, request.getPartnerId(), request.getClientId(), request.getId(), false, null);
+                result.add(eventDto);
+            }
+        }
+        return result;
+    }
+
+    public List<Partner> getPartnersByServiceTermId(Integer serviceId, String term) {
+        return partnerDAO.getPartnersByServiceTermId(serviceId, term);
+    }
+
+    private boolean isNotCompleted(Request request) {
+        return request.getStatus() != 3;
+    }
+
+    private boolean needAutoCompleteRequest(Request request) {
+        long startTimeInMs = request.getStartTime().getTime();
+        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 60 * 1000));
+        return afterAddingMins.getTime() <= new Date().getTime();
+    }
+
+    public Request getCrossedRequestFromDuration(Request request){
+        long startTimeInMs = request.getStartTime().getTime();
+        Date endTime = new Date(startTimeInMs + (request.getDuration() * 60 * 1000));
+
+        for(Request _request:partnerDAO.getReservationsByPartnerId(request.getPartnerId(),1)){
+            long _startTimeInMs = _request.getStartTime().getTime();
+            Date _afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 60 * 1000));
+
+            if((endTime.getTime() > _startTimeInMs && startTimeInMs < _startTimeInMs)
+                    || (endTime.getTime() > _afterAddingMins.getTime() && startTimeInMs < _startTimeInMs )){
+                return _request;
+            }
+        }
+        return null;
+    }
+
+    public Request getCrossedRequestFromStartTime(Request request){
+        long startTimeInMs = request.getStartTime().getTime();
+        for(Request _request:partnerDAO.getReservationsByPartnerId(request.getPartnerId(),1)){
+            Date _endTime = new Date(_request.getStartTime().getTime() + (_request.getDuration() * 60 * 1000));
+            if(_endTime.getTime() > startTimeInMs && startTimeInMs > _request.getStartTime().getTime()){
+                return _request;
+            }
+        }
+        return null;
+    }
+
+
+    public EventListenerClient eventListenerClient() {
+        return this.eventListenerClient;
+    }
+
+    public Integer addFeedbackToPartner(Feedback feedback) {
+        return partnerDAO.addFeedbackToPartner(feedback);
+    }
+
+    public Integer addIsRatedFlagToRequest(Integer requestId) {
+        return partnerDAO.setRatedFlagTrue(requestId);
+    }
+
+    public Partner getPartnerMainDetailsById(Integer partnerId) {
+        return partnerDAO.getPartnerMainDetailsById(partnerId);
+    }
+
+    public boolean isNewRequestInValidRange(Request request) {
+        List<Request> requests = partnerDAO.getReservationsByPartnerId(request.getPartnerId(), 1);
+        long startTimeInMs = request.getStartTime().getTime();
+        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 60 * 1000));
+        for (Request _request : requests) {
+            if (_request.getStartTime().getTime() < afterAddingMins.getTime()) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

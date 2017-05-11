@@ -13,15 +13,18 @@ public class Feedback{
     private Integer rate;
     private Integer partnerId;
     private Integer clientId;
+    private Integer requestId;
 
     public Feedback(){}
 
-    public Feedback(Integer id, String context, Integer rate, Integer partnerId, Integer clientId) {
+    public Feedback(Integer id, String context, Integer rate,
+                    Integer partnerId, Integer clientId,Integer requestId) {
         this.id = id;
         this.context = context;
         this.rate = rate;
         this.partnerId = partnerId;
         this.clientId = clientId;
+        this.requestId = requestId;
     }
 
     public Integer getId() {
@@ -38,6 +41,14 @@ public class Feedback{
 
     public void setContext(String context) {
         this.context = context;
+    }
+
+    public Integer getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(Integer requestId) {
+        this.requestId = requestId;
     }
 
     public Integer getRate() {

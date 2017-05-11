@@ -18,6 +18,10 @@ public class JsonConverter {
         return gson.toJson(object);
     }
 
+    public static String toJson(Object object){
+        return gson.toJson(object);
+    }
+
     public static ServiceInfo getServiceInfoFromJSONString(String jsonString){
         JsonObject jsonObject = gson.fromJson( jsonString , JsonObject.class);
         return gson.fromJson(jsonObject.get("serviceDetail").toString(),ServiceInfo.class);
