@@ -32,7 +32,7 @@ import java.util.List;
 @RequestMapping("partner")
 public class PartnerController {
 
-    private static final String RELATIVE_PATH_FOR_UPLOADS = "\\work\\soso-partner-uploads\\";
+    private static final String RELATIVE_PATH_FOR_UPLOADS = File.separatorChar  + "work" + File.separatorChar  + "soso-partner-service-uploads" + File.separatorChar ;
 
     @Autowired
     private PartnerService partnerService;
@@ -135,16 +135,20 @@ public class PartnerController {
 
     @RequestMapping(value = "/addImageToPartnier", method = RequestMethod.POST, consumes = {"multipart/form-data"})
     public void addImageToPartnier(@RequestParam("file") CommonsMultipartFile file, @RequestParam("id") Integer partnerId, RedirectAttributes redirectAttributes) {
+        System.out.println("***** --> Initializing file with name " + getBasePathOfResources()+ RELATIVE_PATH_FOR_UPLOADS +" <--  *****");
         File directory = new File(getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS);
         String photoPath = null;
-
         if (directory.exists() && directory.isDirectory()) {
-            photoPath = getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
+            System.out.println("***** --> Directory is existed " + getBasePathOfResources()+ RELATIVE_PATH_FOR_UPLOADS +" <--  *****");
+            photoPath = RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
         } else if (directory.mkdirs()) {
-            photoPath = directory.getPath() + "\\" + file.getOriginalFilename();
+            System.out.println("***** --> Creating file with name " + getBasePathOfResources()+ RELATIVE_PATH_FOR_UPLOADS +" <--  *****");
+            photoPath = RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
         }
+
         try {
-            file.transferTo(new File(photoPath));
+            System.out.println("***** --> Transfering file with path " + photoPath +" <--  *****");
+            file.transferTo(new File(getBasePathOfResources() + photoPath));
             partnerService.savePhotoToPartnier(partnerId, photoPath);
         } catch (IOException e) {
             e.printStackTrace();
@@ -158,23 +162,26 @@ public class PartnerController {
                                      RedirectAttributes redirectAttributes) throws IOException {
 
         Partner partner = partnerService.getPartnerById(partnerId);
+        System.out.println("***** --> Initializing file with name " + getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + " <--  *****");
         File directory = new File(getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS);
-
         String newLogoPath = null;
         if (directory.exists() && directory.isDirectory()) {
-            newLogoPath = getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
+            System.out.println("***** --> Directory is existed " + getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + " <--  *****");
+            newLogoPath = RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
         } else if (directory.mkdirs()) {
-            newLogoPath = directory.getPath() + "\\" + file.getOriginalFilename();
+            System.out.println("***** --> Creating file with name " + getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + " <--  *****");
+            newLogoPath = RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
         }
         if (newLogoPath != null) {
             if (partner.getImgId() != null) {
                 String oldImgPath = partnerService.getPhotoById(partner.getImgId());
-                partnerService.deletePartnerOldLogoFromFiles(oldImgPath);
+                partnerService.deletePartnerOldLogoFromFiles(getBasePathOfResources() + oldImgPath);
                 partnerService.deletePhotoById(partner.getImgId());
             }
             Integer idOfNewPhoto = partnerService.savePhotoToPartnier(null, newLogoPath);
             partnerService.updatePartnerLogo(idOfNewPhoto, partnerId);
-            file.transferTo(new File(newLogoPath));
+            System.out.println("***** --> Transfering file with name " + newLogoPath + " <--  *****");
+            file.transferTo(new File(getBasePathOfResources() + newLogoPath));
             redirectAttributes.addFlashAttribute("Your account image is changed successfully!");
         }
         return "redirect:/";
@@ -206,7 +213,9 @@ public class PartnerController {
     public void getPhotoById(@PathVariable(value = "photoId") Integer photoId, HttpServletResponse response) throws IOException {
         String imgPath = partnerService.getPhotoById(photoId);
         response.setContentType(MediaType.IMAGE_JPEG_VALUE);
-        IOUtils.copy(getImageInputStreamByImgPath(imgPath), response.getOutputStream());
+        if (imgPath != null) {
+            IOUtils.copy(getImageInputStreamByImgPath(getBasePathOfResources() + imgPath), response.getOutputStream());
+        }
     }
 
     private InputStream getImageInputStreamByImgPath(String imagePath) throws IOException {
@@ -546,7 +555,7 @@ public class PartnerController {
 
 
     private String getBasePathOfResources() {
-        return new File(".").getAbsoluteFile().getParentFile().getParentFile().getPath();
+        return new File(".").getAbsoluteFile().getParentFile().getPath();
     }
 
 

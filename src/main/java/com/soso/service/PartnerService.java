@@ -260,4 +260,10 @@ public class PartnerService extends BaseRestClient{
         }
         return true;
     }
+
+    private String getBasePathOfResources() {
+        return new File(".").getAbsoluteFile().getParentFile().getPath();
+    }
+
+
 }
