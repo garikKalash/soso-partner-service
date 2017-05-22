@@ -12,10 +12,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import javax.servlet.MultipartConfigElement;
 import javax.sql.DataSource;
+import java.util.Locale;
 
 @Configuration
 @ComponentScan
@@ -39,6 +42,14 @@ public class WebConfig
     @Bean
     public JdbcTemplate jdbcTemplate(DataSource dataSource) {
         return new JdbcTemplate(dataSource);
+    }
+
+    @Bean
+    public LocaleResolver localeResolver() {
+        SessionLocaleResolver slr = new SessionLocaleResolver();
+        Locale l  = new Locale("hy");
+        slr.setDefaultLocale(l);
+        return slr;
     }
 
     @Bean
