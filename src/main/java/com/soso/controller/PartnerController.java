@@ -291,11 +291,11 @@ public class PartnerController {
             thereIsValidation = true;
         }
         if (request.getStatus() == 1 && request.getDuration() != null && partnerService.getCrossedRequestFromDuration(request) != null) {
-            errorJsonMapBuilder.add("crossedRequestDuration", JsonConverter.toJson(partnerService.getCrossedRequestFromDuration(request)));
+            errorJsonMapBuilder.add("crossedRequestDuration",partnerService.getCrossedRequestFromDuration(request));
             thereIsValidation = true;
         }
         if (request.getStatus() == 1 && request.getStartTime() != null && partnerService.getCrossedRequestFromStartTime(request) != null) {
-            errorJsonMapBuilder.add("crossedRequestStart", JsonConverter.toJson(partnerService.getCrossedRequestFromStartTime(request)));
+            errorJsonMapBuilder.add("crossedRequestStart", partnerService.getCrossedRequestFromStartTime(request));
             thereIsValidation = true;
         }
 
