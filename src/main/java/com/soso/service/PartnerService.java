@@ -132,11 +132,14 @@ public class PartnerService extends BaseRestClient{
     }
 
     public void updateReserve(Request request) {
+
+        request.getStartTime().setTime(request.getStartTime().getTime() + 4*60 * 1000);
         partnerDAO.updateReservation(request);
     }
 
 
     public Integer addReservation(Request request) {
+        request.getStartTime().setTime(request.getStartTime().getTime() + 4*60*1000);
         return partnerDAO.addReservation(request);
     }
 
@@ -201,17 +204,17 @@ public class PartnerService extends BaseRestClient{
 
     private boolean needAutoCompleteRequest(Request request) {
         long startTimeInMs = request.getStartTime().getTime();
-        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 60 * 1000));
+        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration()  * 1000));
         return afterAddingMins.getTime() <= new Date().getTime();
     }
 
     public Request getCrossedRequestFromDuration(Request request){
         long startTimeInMs = request.getStartTime().getTime();
-        Date endTime = new Date(startTimeInMs + (request.getDuration() * 60 * 1000));
+        Date endTime = new Date(startTimeInMs + (request.getDuration()  * 1000));
 
         for(Request _request:partnerDAO.getReservationsByPartnerId(request.getPartnerId(),1)){
             long _startTimeInMs = _request.getStartTime().getTime();
-            Date _afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 60 * 1000));
+            Date _afterAddingMins = new Date(startTimeInMs + (request.getDuration() *  1000));
 
             if((endTime.getTime() > _startTimeInMs && startTimeInMs < _startTimeInMs)
                     || (endTime.getTime() > _afterAddingMins.getTime() && startTimeInMs < _startTimeInMs )){
@@ -252,7 +255,7 @@ public class PartnerService extends BaseRestClient{
     public boolean isNewRequestInValidRange(Request request) {
         List<Request> requests = partnerDAO.getReservationsByPartnerId(request.getPartnerId(), 1);
         long startTimeInMs = request.getStartTime().getTime();
-        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 60 * 1000));
+        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration()  * 1000));
         for (Request _request : requests) {
             if (_request.getStartTime().getTime() < afterAddingMins.getTime()) {
                 return false;
