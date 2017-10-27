@@ -6,9 +6,7 @@ import com.soso.service.JsonMapBuilder;
 import com.soso.service.PartnerService;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -544,6 +543,11 @@ public class PartnerController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @RequestMapping(value = "/filteredpartnersbyradius/{serviceId}/{radius}/{latitude}/{longitude}", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List> getPartnersInGivenRange(@PathVariable("serviceId") Integer serviceId, @PathVariable("radius") BigDecimal range, @PathVariable("latitude") BigDecimal latitude ,@PathVariable("longitude") BigDecimal longitude ,HttpServletResponse response, HttpServletRequest request){
+        return new ResponseEntity<>(partnerService.getPartnersInGivenRange(new javafx.util.Pair<>(latitude, longitude), range, serviceId), HttpStatus.OK);
     }
 
 

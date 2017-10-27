@@ -5,6 +5,9 @@ import com.soso.persistance.PartnerDAO;
 import com.soso.service.authentication.AuthenticationTokenService;
 import com.soso.service.common_data.CommonDataService;
 import com.soso.service.eventListener.EventListenerClient;
+import com.soso.utility.GeoCalculator;
+import com.soso.utility.UnitType;
+import javafx.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
@@ -12,9 +15,8 @@ import org.springframework.stereotype.Repository;
 import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Garik Kalashyan on 3/8/2017.
@@ -210,19 +212,19 @@ public class PartnerService extends BaseRestClient{
 
     public Request getCrossedRequestFromDuration(Request request){
         long startTimeInMs = request.getStartTime().getTime();
-        Date endTime = new Date(startTimeInMs + (request.getDuration()  * 1000));
+        Date endTime = new Date(startTimeInMs + (request.getDuration()  * 1000 * 60));
 
-        for(Request _request:partnerDAO.getReservationsByPartnerId(request.getPartnerId(),1)){
-            long _startTimeInMs = _request.getStartTime().getTime();
-            Date _afterAddingMins = new Date(startTimeInMs + (request.getDuration() *  1000));
+            for(Request _request:partnerDAO.getReservationsByPartnerId(request.getPartnerId(),1)){
+                long _startTimeInMs = _request.getStartTime().getTime();
+                Date _afterAddingMins = new Date(startTimeInMs + (request.getDuration() *  1000 * 60));
 
-            if((endTime.getTime() > _startTimeInMs && startTimeInMs < _startTimeInMs)
-                    || (endTime.getTime() > _afterAddingMins.getTime() && startTimeInMs < _startTimeInMs )){
-                return _request;
+                if((endTime.getTime() > _startTimeInMs && startTimeInMs < _startTimeInMs)
+                        || (endTime.getTime() > _afterAddingMins.getTime() && startTimeInMs < _startTimeInMs )){
+                    return _request;
+                }
             }
+            return null;
         }
-        return null;
-    }
 
     public Request getCrossedRequestFromStartTime(Request request){
         long startTimeInMs = request.getStartTime().getTime();
@@ -255,7 +257,7 @@ public class PartnerService extends BaseRestClient{
     public boolean isNewRequestInValidRange(Request request) {
         List<Request> requests = partnerDAO.getReservationsByPartnerId(request.getPartnerId(), 1);
         long startTimeInMs = request.getStartTime().getTime();
-        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration()  * 1000));
+        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration()  * 1000 * 60));
         for (Request _request : requests) {
             if (_request.getStartTime().getTime() < afterAddingMins.getTime()) {
                 return false;
@@ -264,9 +266,23 @@ public class PartnerService extends BaseRestClient{
         return true;
     }
 
-    private String getBasePathOfResources() {
-        return new File(".").getAbsoluteFile().getParentFile().getPath();
+    public List<Map> getPartnersInGivenRange(Pair<BigDecimal,BigDecimal> myLocation, BigDecimal range, Integer partnerServiceId){
+          List<Partner> partnersByServiceId = partnerDAO.getPartnersByServiceId(partnerServiceId);
+          List<Map> list = new ArrayList<>();
+
+          partnersByServiceId.forEach(partner -> {
+              double distanceForPartner = GeoCalculator.distance(partner.getLatitude().doubleValue(),
+                      partner.getLongitude().doubleValue(),
+                      myLocation.getKey().doubleValue(),
+                      myLocation.getValue().doubleValue(),
+                      UnitType.KILOMETER);
+               if(distanceForPartner <= range.doubleValue()){
+                   list.add(new JsonMapBuilder().add("partner",partner).add("distance",distanceForPartner).build());
+               }
+          });
+          return list;
     }
+
 
 
 }
