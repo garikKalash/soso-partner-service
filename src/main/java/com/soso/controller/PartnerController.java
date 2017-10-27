@@ -112,12 +112,10 @@ public class PartnerController {
         response.getWriter().write(partnerToJsonString);
     }
 
-    @RequestMapping(value = "/getAllPartners", method = RequestMethod.GET)
-    public void getAllPartners(HttpServletResponse response) throws IOException {
-        String partnerToJsonString = JsonConverter.toJson(new JsonMapBuilder()
-                .add("partners", partnerService.getAllPartners())
-                .build());
-        response.getWriter().write(partnerToJsonString);
+    @RequestMapping(value = "/getAllPartners", method = RequestMethod.GET,consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Partner>> getAllPartners(){
+        List<Partner> partnerList = partnerService.getAllPartners();
+        return new ResponseEntity<List<Partner>>(partnerList, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/accountImage/{partnerId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
