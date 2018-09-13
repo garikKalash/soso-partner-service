@@ -12,18 +12,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.math.BigDecimal;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Garik Kalashyan on 3/8/2017.
  */
 
 @Repository
-public class PartnerService extends BaseRestClient{
+public class PartnerService extends BaseRestClient {
     private final Integer selfId;
     private final CommonDataService commonDataService = new CommonDataService(4);
     private final AuthenticationTokenService authenticationTokenService = new AuthenticationTokenService(3);
@@ -63,15 +64,6 @@ public class PartnerService extends BaseRestClient{
         return partnerDAO.getAllPartners();
     }
 
-    public String getAllSosoServicesAsJsonString() {
-        return commonDataService.getAllSosoServicesAsJSONString();
-    }
-
-    public String getAllCountryCodesAsJsonString() {
-        return commonDataService.getAllCountryCodesAsJSONString();
-    }
-
-
     public Partner getPartnerByTelephone(String telephone) {
         return partnerDAO.getPartnerByTelephone(telephone);
     }
@@ -89,8 +81,8 @@ public class PartnerService extends BaseRestClient{
         partnerDAO.updateLogosrcPathOfPartner(partnerId, newlogoId);
     }
 
-    public void saveEditedMainInfo(Integer partnerId, String editedTelephone, String editedAddress) {
-        partnerDAO.saveEditedMainInfoOfPartner(partnerId, editedAddress, editedTelephone);
+    public void saveEditedMainInfo(Integer partnerId, String editedTelephone) {
+        partnerDAO.saveEditedMainInfoOfPartner(partnerId, editedTelephone);
     }
 
     public List<Partner> getPartnersByServiceId(Integer serviceId) {
@@ -117,12 +109,12 @@ public class PartnerService extends BaseRestClient{
         return partnerDAO.getPhotoById(photoId);
     }
 
-    public void deletePhotoById(Integer photoId) {
-        partnerDAO.deletePhotoById(photoId);
+    public Integer deletePhotoById(Integer photoId) {
+        return partnerDAO.deletePhotoById(photoId);
     }
 
-    public void deleteReservationById(Integer reserveId) {
-        partnerDAO.deleteReservationById(reserveId);
+    public Integer deleteReservationById(Integer reserveId) {
+        return partnerDAO.deleteReservationById(reserveId);
     }
 
     public List<Request> getReservationsByClientId(Integer clientId, Integer status) {
@@ -135,13 +127,13 @@ public class PartnerService extends BaseRestClient{
 
     public void updateReserve(Request request) {
 
-        request.getStartTime().setTime(request.getStartTime().getTime() + 4*60 * 1000);
+        request.getStartTime().setTime(request.getStartTime().getTime() + 4 * 60 * 1000);
         partnerDAO.updateReservation(request);
     }
 
 
     public Integer addReservation(Request request) {
-        request.getStartTime().setTime(request.getStartTime().getTime() + 4*60*1000);
+        request.getStartTime().setTime(request.getStartTime().getTime() + 4 * 60 * 1000);
         return partnerDAO.addReservation(request);
     }
 
@@ -169,8 +161,8 @@ public class PartnerService extends BaseRestClient{
         return partnerDAO.updateServiceDetailForPartner(partnerServiceDetail);
     }
 
-    public void deletePartnerServiceDetail(Integer itemId) {
-        partnerDAO.deletePartnerService(itemId);
+    public Integer deletePartnerServiceDetail(Integer itemId) {
+        return partnerDAO.deletePartnerService(itemId);
     }
 
     public List<PartnerServiceDetail> getPartnerServiceDetailsByPartner(Integer itemId) {
@@ -206,34 +198,24 @@ public class PartnerService extends BaseRestClient{
 
     private boolean needAutoCompleteRequest(Request request) {
         long startTimeInMs = request.getStartTime().getTime();
-        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration()  * 1000));
+        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 1000));
         return afterAddingMins.getTime() <= new Date().getTime();
     }
 
-    public Request getCrossedRequestFromDuration(Request request){
+    public Request getCrossedRequest(Request request) {
         long startTimeInMs = request.getStartTime().getTime();
-        Date endTime = new Date(startTimeInMs + (request.getDuration()  * 1000 * 60));
+        Date endTime = new Date(startTimeInMs + (request.getDuration() * 1000 * 60));
 
-            for(Request _request:partnerDAO.getReservationsByPartnerId(request.getPartnerId(),1)){
-                long _startTimeInMs = _request.getStartTime().getTime();
-                Date _afterAddingMins = new Date(startTimeInMs + (request.getDuration() *  1000 * 60));
+        for (Request _request : partnerDAO.getReservationsByPartnerId(request.getPartnerId(), 1)) {
+            long _startTimeInMs = _request.getStartTime().getTime();
+            Date _afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 1000 * 60));
 
-                if((endTime.getTime() > _startTimeInMs && startTimeInMs < _startTimeInMs)
-                        || (endTime.getTime() > _afterAddingMins.getTime() && startTimeInMs < _startTimeInMs )){
-                    return _request;
-                }
-            }
-            return null;
-        }
-
-    public Request getCrossedRequestFromStartTime(Request request){
-        long startTimeInMs = request.getStartTime().getTime();
-        for(Request _request:partnerDAO.getReservationsByPartnerId(request.getPartnerId(),1)){
-            Date _endTime = new Date(_request.getStartTime().getTime() + (_request.getDuration() * 60 * 1000));
-            if(_endTime.getTime() > startTimeInMs && startTimeInMs > _request.getStartTime().getTime()){
+            if ((startTimeInMs < _startTimeInMs && endTime.getTime() > _startTimeInMs)
+                    || (startTimeInMs > _startTimeInMs && startTimeInMs < _afterAddingMins.getTime())) {
                 return _request;
             }
         }
+
         return null;
     }
 
@@ -257,7 +239,7 @@ public class PartnerService extends BaseRestClient{
     public boolean isNewRequestInValidRange(Request request) {
         List<Request> requests = partnerDAO.getReservationsByPartnerId(request.getPartnerId(), 1);
         long startTimeInMs = request.getStartTime().getTime();
-        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration()  * 1000 * 60));
+        Date afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 1000 * 60));
         for (Request _request : requests) {
             if (_request.getStartTime().getTime() < afterAddingMins.getTime()) {
                 return false;
@@ -266,23 +248,22 @@ public class PartnerService extends BaseRestClient{
         return true;
     }
 
-    public List<Map> getPartnersInGivenRange(Pair<BigDecimal,BigDecimal> myLocation, BigDecimal range, Integer partnerServiceId){
-          List<Partner> partnersByServiceId = partnerDAO.getPartnersByServiceId(partnerServiceId);
-          List<Map> list = new ArrayList<>();
+    public List<Map> getPartnersInGivenRange(Pair<BigDecimal, BigDecimal> myLocation, BigDecimal range, Integer partnerServiceId) {
+        List<Partner> partnersByServiceId = partnerDAO.getPartnersByServiceId(partnerServiceId);
+        List<Map> list = new ArrayList<>();
 
-          partnersByServiceId.forEach(partner -> {
-              double distanceForPartner = GeoCalculator.distance(partner.getLatitude().doubleValue(),
-                      partner.getLongitude().doubleValue(),
-                      myLocation.getKey().doubleValue(),
-                      myLocation.getValue().doubleValue(),
-                      UnitType.KILOMETER);
-               if(distanceForPartner <= range.doubleValue()){
-                   list.add(new JsonMapBuilder().add("partner",partner).add("distance",distanceForPartner).build());
-               }
-          });
-          return list;
+        partnersByServiceId.forEach(partner -> {
+            double distanceForPartner = GeoCalculator.distance(partner.getLatitude().doubleValue(),
+                    partner.getLongitude().doubleValue(),
+                    myLocation.getKey().doubleValue(),
+                    myLocation.getValue().doubleValue(),
+                    UnitType.KILOMETER);
+            if (distanceForPartner <= range.doubleValue()) {
+                list.add(new JsonMapBuilder().add("partner", partner).add("distance", distanceForPartner).build());
+            }
+        });
+        return list;
     }
-
 
 
 }

@@ -9,7 +9,7 @@
 	<packaging>jar</packaging>
 
 	<name>sosopartner</name>
-	<description>SosoPartner project for Spring Boot</description>
+	<description>Soso partner project on Spring Boot</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -17,6 +17,14 @@
 		<version>1.5.1.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
+
+	<repositories>
+		<repository>
+			<id>spring-milestone</id>
+			<name>Spring Milestone Repository</name>
+			<url>https://repo.spring.io/milestone</url>
+		</repository>
+	</repositories>
 
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>

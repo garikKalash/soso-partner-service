@@ -107,7 +107,6 @@ public class PartnerDAO {
     public Integer setRatedFlagTrue(Integer requestId) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("requestid", requestId);
-
         return getNamedParameterJdbcOperations().update("UPDATE public.f_partnerrequests SET israted = TRUE WHERE id = :requestid", paramMap);
     }
 
@@ -117,10 +116,10 @@ public class PartnerDAO {
         return getNamedParameterJdbcOperations().query("SELECT * FROM public.f_partnersubservices WHERE partnerid = :partnerid", paramMap, new BeanPropertyRowMapper<>(PartnerServiceDetail.class));
     }
 
-    public void deletePartnerService(Integer itemId) {
+    public Integer deletePartnerService(Integer itemId) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", itemId);
-        getNamedParameterJdbcOperations().update("DELETE FROM public.f_partnersubservices WHERE id = :id", paramMap);
+        return getNamedParameterJdbcOperations().update("DELETE FROM public.f_partnersubservices WHERE id = :id", paramMap);
     }
 
 
@@ -147,7 +146,7 @@ public class PartnerDAO {
         getNamedParameterJdbcOperations().update(UPDATE_LOGO_SRC_PATH_OF_PARTNER_QUERY, paramMap);
     }
 
-    public void saveEditedMainInfoOfPartner(Integer partnerId, String editedAddress, String editedTelephone) {
+    public void saveEditedMainInfoOfPartner(Integer partnerId, String editedTelephone) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", partnerId);
         if (editedTelephone != null && !editedTelephone.isEmpty()) {
@@ -271,10 +270,10 @@ public class PartnerDAO {
         }
     }
 
-    public void deletePhotoById(Integer photoId) {
+    public Integer deletePhotoById(Integer photoId) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", photoId);
-        getNamedParameterJdbcOperations().update(DELETE_PHOTO_BY_ID_QUERY, paramMap);
+        return getNamedParameterJdbcOperations().update(DELETE_PHOTO_BY_ID_QUERY, paramMap);
     }
 
     public List<Request> getAllRequests() {
@@ -328,11 +327,11 @@ public class PartnerDAO {
         }
     }
 
-    public void deleteReservationById(Integer reserveId) {
+    public Integer deleteReservationById(Integer reserveId) {
 
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", reserveId);
-        getNamedParameterJdbcOperations().update(DELETE_RESERVATION_BY_ID_QUERY, paramMap);
+        return getNamedParameterJdbcOperations().update(DELETE_RESERVATION_BY_ID_QUERY, paramMap);
     }
 
     public void updateReservation(Request request) {

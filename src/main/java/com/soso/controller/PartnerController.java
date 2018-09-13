@@ -2,12 +2,15 @@ package com.soso.controller;
 
 import com.soso.models.*;
 import com.soso.service.JsonConverter;
-import com.soso.service.JsonMapBuilder;
 import com.soso.service.PartnerService;
+import com.soso.validator.FeedbackValidator;
+import com.soso.validator.PartnerValidator;
+import com.soso.validator.ReserveValidator;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
@@ -19,8 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Garik Kalashyan on 3/4/2017.
@@ -35,6 +37,15 @@ public class PartnerController {
 
     @Autowired
     private PartnerService partnerService;
+
+    @Autowired
+    private FeedbackValidator feedbackValidator;
+
+    @Autowired
+    private ReserveValidator reserveValidator;
+
+    @Autowired
+    private PartnerValidator partnerValidator;
 
 
     /*   @ModelAttribute
@@ -54,13 +65,30 @@ public class PartnerController {
 
    */
     @RequestMapping(value = "/saveEditedMainInfo", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void saveEditedMainInfo(@RequestBody Partner partner, HttpServletResponse response) throws IOException {
-        partnerService.saveEditedMainInfo(partner.getId(), partner.getTelephone(), partner.getAddress());
+    public ResponseEntity saveEditedMainInfo(@RequestBody Partner partner,
+                                   @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
+                                   Errors errors) throws IOException {
+        partnerValidator.validateMainInfo(partner, language, errors);
+        if(!errors.hasErrors()){
+             partnerService.saveEditedMainInfo(partner.getId(), partner.getTelephone());
+             return new ResponseEntity("edited", HttpStatus.OK);
+        }else{
+             return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @RequestMapping(value = "/saveEditedAddress", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void saveEditedAddress(@RequestBody Partner partner, HttpServletResponse response) throws IOException {
-        partnerService.saveEditedAddress(partner.getId(), partner.getLatitude(), partner.getLongitude(), partner.getAddress());
+    public ResponseEntity saveEditedAddress(@RequestBody Partner partner,
+                                  @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
+                                  Errors errors) throws IOException {
+        partnerValidator.validateEditedAddress(partner, language, errors);
+        if(!errors.hasErrors()){
+            partnerService.saveEditedAddress(partner.getId(), partner.getLatitude(), partner.getLongitude(), partner.getAddress());
+            return new ResponseEntity("edited", HttpStatus.OK);
+        }else{
+            return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
+        }
+
     }
 
     @RequestMapping(value = "/saveEditedNotice", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -68,8 +96,8 @@ public class PartnerController {
         partnerService.saveEditedNotice(partner.getId(), partner.getNotices());
     }
 
-    @RequestMapping(value = "/partnerRoom/{partnerId}", method = RequestMethod.GET)
-    public void getPartnerById(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response, HttpServletRequest request) throws IOException {
+    @RequestMapping(value = "/partners/{partnerId}", method = RequestMethod.GET)
+    public ResponseEntity<Partner> getPartnerById(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response, HttpServletRequest request) throws IOException {
         response.setCharacterEncoding("UTF-8");
         Partner partner = partnerService.getPartnerById(partnerId);
         partner.setFeedbacks(partnerService.getFeedbacks(partnerId));
@@ -88,15 +116,12 @@ public class PartnerController {
 
         }
 
-        String partnerToJsonString = JsonConverter.toJson(new JsonMapBuilder()
-                .add("partner", partner)
-                .build());
-        response.getWriter().write(partnerToJsonString);
+        return new ResponseEntity<>(partner, HttpStatus.OK);
     }
 
 
     @RequestMapping(value = "/partnermaindetails/{partnerId}", method = RequestMethod.GET)
-    public void getPartnerMainDetailsById(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response, HttpServletRequest request) throws IOException {
+    public ResponseEntity<Partner> getPartnerMainDetailsById(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response, HttpServletRequest request) throws IOException {
         response.setCharacterEncoding("UTF-8");
         Partner partner = partnerService.getPartnerMainDetailsById(partnerId);
         if (partner.getImgId() != null) {
@@ -105,29 +130,24 @@ public class PartnerController {
             partner.setImgpath(request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + 39);
 
         }
-
-        String partnerToJsonString = JsonConverter.toJson(new JsonMapBuilder()
-                .add("partner", partner)
-                .build());
-        response.getWriter().write(partnerToJsonString);
+        return new ResponseEntity<>(partner, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/getAllPartners", method = RequestMethod.GET,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/partners", method = RequestMethod.GET,consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<Partner>> getAllPartners(){
         List<Partner> partnerList = partnerService.getAllPartners();
-        return new ResponseEntity<List<Partner>>(partnerList, HttpStatus.OK);
+        return new ResponseEntity<>(partnerList, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/accountImage/{partnerId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public void getPartnerAccountPage(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response) throws IOException {
+    public ResponseEntity<Integer> getPartnerAccountPage(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response) throws IOException {
         Partner partner = partnerService.getPartnerById(partnerId);
         if (partner != null) {
-            String accountImgIdJson = JsonConverter.toJson(new JsonMapBuilder()
-                    .add("imageId", partner.getImgId() != null ? partner.getImgId() : 39)
-                    .build()); // 39 is the id of default account image path
-            response.getWriter().write(accountImgIdJson);
+            Optional<Integer> optionalImgId = Optional.of(partner.getId());
+            return new ResponseEntity<>(optionalImgId.orElse(39), HttpStatus.OK); // 39 is the id of default account image path
         }
+        return null;
     }
 
     @RequestMapping(value = "/addImageToPartnier", method = RequestMethod.POST, consumes = {"multipart/form-data"})
@@ -184,35 +204,15 @@ public class PartnerController {
         return "redirect:/";
     }
 
-    @RequestMapping(value = "/partnerByService/{serviceId}", method = RequestMethod.GET)
-    public void getPartnersByServiceId(@PathVariable(value = "serviceId") Integer serviceId, HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.setCharacterEncoding("UTF-8");
-        List<Partner> partners = partnerService.getPartnersByServiceId(serviceId);
-        response.getWriter().flush();
-        for (Partner partner : partners) {
-            partner.setFeedbacks(partnerService.getFeedbacks(partner.getId()));
-            partner.setImgpath(request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + partner.getImgId());
-            partner.setServices(partnerService.getPartnerServiceDetailsByPartner(partner.getId()));
-            partner.setPhotoDtos(new ArrayList<>());
-            for (PhotoDto photoDto : partnerService.getPhotosByParentId(partner.getId())) {
-                photoDto.setImage_path(request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + photoDto.getId());
-                partner.getPhotoDtos().add(photoDto);
-            }
-        }
-        String partnerAccountImageString = JsonConverter.toJson(new JsonMapBuilder()
-                .add("partners", partners)
-                .build());
-        response.getWriter().write(partnerAccountImageString);
-    }
-
 
     @RequestMapping(value = "/partnerphoto/{photoId}", method = RequestMethod.GET)
-    public void getPhotoById(@PathVariable(value = "photoId") Integer photoId, HttpServletResponse response) throws IOException {
+    public byte[] getPhotoById(@PathVariable(value = "photoId") Integer photoId, HttpServletResponse response) throws IOException {
         String imgPath = partnerService.getPhotoById(photoId);
         response.setContentType(MediaType.IMAGE_JPEG_VALUE);
-        if (imgPath != null) {
-            IOUtils.copy(getImageInputStreamByImgPath(getBasePathOfResources() + imgPath), response.getOutputStream());
+        if(imgPath != null){
+        return IOUtils.toByteArray(getImageInputStreamByImgPath(getBasePathOfResources() + imgPath));
         }
+        return null;
     }
 
     private InputStream getImageInputStreamByImgPath(String imagePath) throws IOException {
@@ -223,324 +223,206 @@ public class PartnerController {
     }
 
     @RequestMapping(value = "/partnerPhotos/{partnerId}", method = RequestMethod.GET)
-    public void getPartnerPhotos(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response, HttpServletRequest request) throws IOException {
+    public ResponseEntity<List<PhotoDto>> getPartnerPhotos(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response, HttpServletRequest request) throws IOException {
         List<PhotoDto> photoDtos = partnerService.getPhotosByParentId(partnerId);
         response.getWriter().flush();
 
         for (PhotoDto photoDto : photoDtos) {
             photoDto.setImage_path(request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + photoDto.getId());
         }
-        String partnerAccountImageString = JsonConverter.toJson(new JsonMapBuilder()
-                .add("photos", photoDtos)
-                .build());
-        response.getWriter().write(partnerAccountImageString);
+
+        return new ResponseEntity<>(photoDtos, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/addReserve", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void addReserveToPartnier(@RequestBody Request request, HttpServletResponse response) throws IOException {
-        boolean thereIsValidation = false;
-        JsonMapBuilder errorJsonMapBuilder = new JsonMapBuilder();
-        if (request.getStatus() != 2 && (request.getDuration() == null || request.getDuration() <= 0)) {
-            errorJsonMapBuilder.add("isWrongDuration", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
-        if (request.getDuration() != null && partnerService.getCrossedRequestFromDuration(request) != null) {
-            errorJsonMapBuilder.add("crossedRequestDuration", partnerService.getCrossedRequestFromDuration(request));
-            thereIsValidation = true;
-        }
-        if (request.getStartTime() != null && partnerService.getCrossedRequestFromStartTime(request) != null) {
-            errorJsonMapBuilder.add("crossedRequestStart", partnerService.getCrossedRequestFromStartTime(request));
-            thereIsValidation = true;
-        }
-
-        if (!thereIsValidation) {
+    public ResponseEntity addReserveToPartnier(@RequestBody Request request,
+                                               @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
+                                               Errors errors) throws IOException {
+        reserveValidator.validateReserve(request, language,errors);
+        if(!errors.hasErrors()){
             Integer createdReservationId = partnerService.addReservation(request);
+            request.setId(createdReservationId);
             if (request.getClientId() != null) {
-                EventDto eventDto = new EventDto();
-                eventDto.setClientId(request.getClientId());
-                eventDto.setRequestId(createdReservationId);
-                eventDto.setPartnerId(request.getPartnerId());
-                eventDto.setSeen(false);
-
-                String requestJson = JsonConverter.toJson(eventDto);
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
-                partnerService.eventListenerClient().getRestTemplate()
-                        .postForObject(partnerService.eventListenerClient()
-                                .getDestinationService().getUrl() + "eventsListener/addneweventtopartner", entity, String.class);
+                notifyForNewEventToPartnier(request);
             }
-            response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder()
-                    .add("newReservationId", createdReservationId)
-                    .build()));
-        } else {
-            response.getWriter().write(JsonConverter.toJson(errorJsonMapBuilder.build()));
+            return new ResponseEntity(createdReservationId, HttpStatus.CREATED);
+        }else{
+            return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
         }
+    }
+
+    private void notifyForNewEventToPartnier(Request request){
+        EventDto eventDto = new EventDto();
+        eventDto.setClientId(request.getClientId());
+        eventDto.setRequestId(request.getId());
+        eventDto.setPartnerId(request.getPartnerId());
+        eventDto.setSeen(false);
+
+        String requestJson = JsonConverter.toJson(eventDto);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
+        partnerService.eventListenerClient().getRestTemplate()
+                .postForObject(partnerService.eventListenerClient()
+                        .getDestinationService().getUrl() + "eventsListener/addneweventtopartner", entity, String.class);
 
     }
 
-    @RequestMapping(value = "/updateReserve", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void updateReserve(@RequestBody Request request, HttpServletResponse response) throws IOException {
-        boolean thereIsValidation = false;
-        JsonMapBuilder errorJsonMapBuilder = new JsonMapBuilder();
-        if (request.getStatus() == 1 && (request.getDuration() == null || request.getDuration() <= 0)) {
-            errorJsonMapBuilder.add("isWrongDuration", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
-        if (request.getStatus() == 1 && request.getDuration() != null && partnerService.getCrossedRequestFromDuration(request) != null) {
-            errorJsonMapBuilder.add("crossedRequestDuration",partnerService.getCrossedRequestFromDuration(request));
-            thereIsValidation = true;
-        }
-        if (request.getStatus() == 1 && request.getStartTime() != null && partnerService.getCrossedRequestFromStartTime(request) != null) {
-            errorJsonMapBuilder.add("crossedRequestStart", partnerService.getCrossedRequestFromStartTime(request));
-            thereIsValidation = true;
-        }
-
-
-        if (!thereIsValidation) {
-
+    @RequestMapping(value = "/updatereserve", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity updateReserve(@RequestBody Request request,
+                              @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
+                              Errors errors) throws IOException {
+        reserveValidator.validateReserve(request,language,errors);
+        if(!errors.hasErrors()){
             partnerService.updateReserve(request);
-            EventDto eventDto = new EventDto();
-            eventDto.setPartnerId(request.getPartnerId());
-            eventDto.setRequestId(request.getId());
-            eventDto.setClientId(request.getClientId());
+            notifyAboutUpdateToClient(request);
+            return new ResponseEntity("ok", HttpStatus.OK);
+        }else{
+            return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
+        }
+    }
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            if (request.getClientId() != null && request.getStatus() == 1) {
-                String requestJson = JsonConverter.toJson(eventDto);
-                HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
-                partnerService.eventListenerClient().getRestTemplate().postForObject(partnerService.eventListenerClient().getDestinationService().getUrl() + "eventsListener/addacceptedeventtoclient", entity, String.class);
-            } else if (request.getClientId() != null && request.getStatus() == 3) {
-                eventDto.setSeen(false);
+    private void notifyAboutUpdateToClient(Request request){
+        EventDto eventDto = new EventDto();
+        eventDto.setPartnerId(request.getPartnerId());
+        eventDto.setRequestId(request.getId());
+        eventDto.setClientId(request.getClientId());
 
-                String requestJson = JsonConverter.toJson(eventDto);
-                HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
-                partnerService.eventListenerClient().getRestTemplate().postForObject(partnerService.eventListenerClient().getDestinationService().getUrl() + "eventsListener/adddoneeventtoclient", entity, String.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (request.getClientId() != null && request.getStatus() == 1) {
+            String requestJson = JsonConverter.toJson(eventDto);
+            HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
+            partnerService.eventListenerClient().getRestTemplate().postForObject(partnerService.eventListenerClient().getDestinationService().getUrl() + "eventsListener/addacceptedeventtoclient", entity, String.class);
+        } else if (request.getClientId() != null && request.getStatus() == 3) {
+            eventDto.setSeen(false);
 
-            }
-        } else {
-            response.getWriter().write(JsonConverter.toJson(errorJsonMapBuilder.build()));
+            String requestJson = JsonConverter.toJson(eventDto);
+            HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
+            partnerService.eventListenerClient().getRestTemplate().postForObject(partnerService.eventListenerClient().getDestinationService().getUrl() + "eventsListener/adddoneeventtoclient", entity, String.class);
+
         }
     }
 
 
     @RequestMapping(value = "/deletereserve/{reserveId}", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void deleteReserveToPartnier(@PathVariable("reserveId") Integer reserveId, HttpServletResponse response) throws IOException {
-        partnerService.deleteReservationById(reserveId);
+    public ResponseEntity<Boolean> deleteReserveToPartnier(@PathVariable("reserveId") Integer reserveId, HttpServletResponse response) throws IOException {
+        return new ResponseEntity<>(partnerService.deleteReservationById(reserveId) > 1, HttpStatus.OK);
     }
 
 
     @RequestMapping(value = "/reservationsforpartner/{partnerId}/{status}", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void getReservationsByPartnierId(@PathVariable("partnerId") Integer partnerId, @PathVariable("status") Integer status, HttpServletResponse response) throws IOException {
+    public ResponseEntity<List<Request>> getReservationsByPartnierId(@PathVariable("partnerId") Integer partnerId, @PathVariable("status") Integer status, HttpServletResponse response) throws IOException {
         List<Request> reservations = partnerService.getReservationsByPartnerId(partnerId, status);
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder().add("reservations", reservations).build()));
+        return new ResponseEntity<>(reservations, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/reservationsforclient/{clientId}/{status}", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void getReservationsByClientId(@PathVariable("clientId") Integer clientId, @PathVariable("status") Integer status, HttpServletResponse response) throws IOException {
+    public ResponseEntity<List<Request>> getReservationsByClientId(@PathVariable("clientId") Integer clientId, @PathVariable("status") Integer status, HttpServletResponse response) throws IOException {
         List<Request> reservations = partnerService.getReservationsByClientId(clientId, status);
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder().add("reservations", reservations).build()));
-    }
-
-    @RequestMapping(value = "/deleteFollowerByClientPartnerId/{clientId}/{partnerId}", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void deleteFollowerByClientPartnerId(@PathVariable("clientId") Integer clientId, @PathVariable("partnerId") Integer partnerId) {
-        partnerService.deleteFollowerByClientPartnerId(clientId, partnerId);
-    }
-
-    @RequestMapping(value = "/addfollowertopartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void addFollowerToPartner(@RequestBody Follower follower, HttpServletResponse response) throws IOException {
-        Integer newFollowerId = partnerService.addFollowerToPartnier(follower.getPartnerId(), follower.getClientId());
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder()
-                .add("newFollowerId", newFollowerId).build()));
-    }
-
-    @RequestMapping(value = "/followersforpartner/{partnerId}", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void getFollowersByPartnerId(@PathVariable("partnerId") Integer partnerId, HttpServletResponse response) throws IOException {
-        List<Follower> followers = partnerService.getFollowersByPartnerId(partnerId);
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder().add("followers", followers).build()));
-    }
-
-    @RequestMapping(value = "/followersforclient/{clientId}", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void getFollowersByClientId(@PathVariable("clientId") Integer partnerId, HttpServletResponse response) throws IOException {
-        List<Follower> followers = partnerService.getFollowersByPartnerId(partnerId);
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder().add("followers", followers).build()));
-    }
-
-
-    @RequestMapping(value = "/follower/{id}", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void getFollowerById(@PathVariable("id") Integer partnerId, HttpServletResponse response) throws IOException {
-        Follower follower = partnerService.getFollowerById(partnerId);
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder().add("follower", follower).build()));
+        return new ResponseEntity<>(reservations, HttpStatus.OK);
     }
 
 
     @RequestMapping(value = "/addpartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void registerPartner(@RequestBody Partner partner, HttpServletResponse response) throws IOException {
-        boolean thereIsValidation = false;
-        JsonMapBuilder errorJsonMapBuilder = new JsonMapBuilder();
-        if (partner.getTelephone() == null || partner.getTelephone().isEmpty()) {
-            errorJsonMapBuilder.add("isShortTelephone", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        } else if (partnerService.getPartnerByTelephone(partner.getTelephone()) != null) {
-            errorJsonMapBuilder.add("isDoubleTelephone", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
-        if (partner.getPassword() == null || partner.getPassword().isEmpty() || partner.getPassword().length() < 3) {
-            errorJsonMapBuilder.add("isInvalidPassword", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
-        if (partner.getUsername() == null || partner.getUsername().isEmpty() || partner.getUsername().length() < 3) {
-            errorJsonMapBuilder.add("isInvalidUsername", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        } else if (partnerService.getPartnerByUsername(partner.getUsername()) != null) {
-            errorJsonMapBuilder.add("isDoubleUsername", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
-        if (partner.getName() == null || partner.getName().isEmpty() || partner.getName().length() < 3) {
-            errorJsonMapBuilder.add("isInvalidName", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
-        if (partner.getServiceId() == null) {
-            errorJsonMapBuilder.add("isInvalidServiceId", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
-
-        if (!thereIsValidation) {
+    public ResponseEntity registerPartner(@RequestBody Partner partner,
+                                @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
+                                Errors errors) throws IOException {
+        partnerValidator.validateNewPartner(partner, language, errors);
+        if (!errors.hasErrors()) {
             Integer newPartnerId = partnerService.addPartner(partner);
-            response.getWriter().write(JsonConverter.toJson(new
-                    JsonMapBuilder()
-                    .add("newPartnerId", newPartnerId)
-                    .build()));
-
+            return new ResponseEntity(newPartnerId, HttpStatus.CREATED);
         } else {
-            response.getWriter().write(JsonConverter.toJson(errorJsonMapBuilder.build()));
+            return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
         }
     }
 
 
     @RequestMapping(value = "/signinpartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void signin(@RequestBody Partner partner, HttpServletResponse response) throws IOException {
-        boolean thereIsValidation = false;
-        JsonMapBuilder errorJsonMapBuilder = new JsonMapBuilder();
-        if (partner.getTelephone() == null || partner.getTelephone().isEmpty()) {
-            errorJsonMapBuilder.add("isShortTelephone", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
-        if (partner.getPassword() == null || partner.getPassword().isEmpty() || partner.getPassword().length() < 3) {
-            errorJsonMapBuilder.add("isInvalidPassword", Boolean.TRUE.toString());
-            thereIsValidation = true;
-        }
+    public ResponseEntity signin(@RequestBody Partner partner,
+                       @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
+                       Errors errors) throws IOException {
+        partnerValidator.validateForSignin(partner, language, errors);
 
-        if (!thereIsValidation) {
+        if (!errors.hasErrors()) {
 
             Integer partnerId = partnerService.signInPartner(partner.getTelephone(), partner.getPassword());
             if (partnerId != null) {
-                response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder()
-                        .add("partnerId", partnerId)
-                        .add("isShortTelephone", Boolean.FALSE.toString())
-                        .add("isInvalidPassword", Boolean.FALSE.toString())
-                        .build()));
+                return new ResponseEntity(partnerId, HttpStatus.OK);
             } else {
-                response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder()
-                        .add("wrongpartner", Boolean.TRUE.toString())
-                        .build()));
+                return new ResponseEntity(-1, HttpStatus.NO_CONTENT);
             }
         } else {
-            response.getWriter().write(JsonConverter.toJson(errorJsonMapBuilder.build()));
+           return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
         }
     }
 
     @RequestMapping(value = "/addservicedetailtopartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void addServiceDetailToPartner(@RequestBody PartnerServiceDetail partnerServiceDetail, HttpServletResponse response) throws IOException {
+    public ResponseEntity<Integer> addServiceDetailToPartner(@RequestBody PartnerServiceDetail partnerServiceDetail, HttpServletResponse response) throws IOException {
         Integer serviceId = partnerService.addServiceDetailToPartner(partnerServiceDetail.getPartnerId(), partnerServiceDetail.getServiceId(), partnerServiceDetail.getDefaultduration(), partnerServiceDetail.getPrice());
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder()
-                .add("serviceId", serviceId)
-                .build()));
+        return new ResponseEntity<>(serviceId, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/updateservicedetailtopartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void updateServiceDetailToPartner(@RequestBody PartnerServiceDetail partnerServiceDetail, HttpServletResponse response) throws IOException {
-        Integer count = partnerService.updatePartnerServiceDetail(partnerServiceDetail);
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder()
-                .add("count", count)
-                .build()));
+    @RequestMapping(value = "/updateservicedetailtopartner", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Integer> updateServiceDetailToPartner(@RequestBody PartnerServiceDetail partnerServiceDetail, HttpServletResponse response) throws IOException {
+        return new ResponseEntity<>(partnerService.updatePartnerServiceDetail(partnerServiceDetail), HttpStatus.OK);
     }
 
 
     @RequestMapping(value = "/deleteservicedetailtopartner/{id}", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void deleteServiceDetailToPartner(@PathVariable("id") Integer id, HttpServletResponse response) throws IOException {
-        partnerService.deletePartnerServiceDetail(id);
+    public ResponseEntity<Boolean> deleteServiceDetailToPartner(@PathVariable("id") Integer id) throws IOException {
+        return new ResponseEntity<>(partnerService.deletePartnerServiceDetail(id) != 0, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/deletephotofrompartner/{id}", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void deletePhotoFromPartner(@PathVariable("id") Integer id, HttpServletResponse response) throws IOException {
-        partnerService.deletePhotoById(id);
+    public ResponseEntity<Boolean> deletePhotoFromPartner(@PathVariable("id") Integer id) throws IOException {
+        return new ResponseEntity<>(partnerService.deletePhotoById(id) != 0, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/getservicedetailsforpartner/{partnerId}", method = RequestMethod.GET)
-    public void getServiceDetailForPartner(@PathVariable("partnerId") Integer id, HttpServletResponse response) throws IOException {
-        List<PartnerServiceDetail> serviceDetailList = partnerService.getPartnerServiceDetailsByPartner(id);
-        response.getWriter().write(JsonConverter.toJson(new JsonMapBuilder()
-                .add("services", serviceDetailList)
-                .build()));
-
+    public ResponseEntity<List> getServiceDetailForPartner(@PathVariable("partnerId") Integer id) throws IOException {
+        return new ResponseEntity<>(partnerService.getPartnerServiceDetailsByPartner(id), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/getautocompletedrequests", method = RequestMethod.GET)
     @ResponseBody
-    public void getAutocompletedRequestsAsEvents(HttpServletResponse response) throws IOException {
-        List<EventDto> eventDtos = partnerService.getAutoCompletedRequests();
-        response.getWriter().write(JsonConverter.toJson(eventDtos));
+    public ResponseEntity<List> getAutocompletedRequestsAsEvents() throws IOException {
+        return new ResponseEntity<>(partnerService.getAutoCompletedRequests(), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/addfeedback", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void addFeedbackToPartner(@RequestBody Feedback feedback, HttpServletResponse response) {
-        Integer newFeedbackId = partnerService.addFeedbackToPartner(feedback);
-        if (newFeedbackId != null) {
-            partnerService.addIsRatedFlagToRequest(feedback.getRequestId());
+    public ResponseEntity addFeedbackToPartner(@RequestBody Feedback feedback, @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language, Errors errors) {
+        feedbackValidator.validate(feedback, language, errors);
+        if(!errors.hasErrors()){
+            Integer newFeedbackId = partnerService.addFeedbackToPartner(feedback);
+            if (newFeedbackId != null) {
+              return   new ResponseEntity<>(partnerService.addIsRatedFlagToRequest(feedback.getRequestId()) != null, HttpStatus.OK);
+            }
+        }else{
+            return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
         }
-        try {
-            response.getWriter().write("allisok");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return null;
     }
 
-    @RequestMapping(value = "/filteredpartners/{serviceId}/{term}", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void getPartnersByServiceTermId(@PathVariable("serviceId") Integer serviceId, @PathVariable("term") String term, HttpServletResponse response, HttpServletRequest request) {
-        response.setCharacterEncoding("UTF-8");
+    @RequestMapping(value = {"/filteredpartners/{serviceId}", "/filteredpartners/{serviceId}/{term}"}, method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List> getPartnersByServiceTermId(@PathVariable("serviceId") Integer serviceId, @PathVariable(value = "term", required = false) String term, HttpServletRequest request) {
         List<Partner> partners;
         if (term != null && !term.isEmpty()) {
             partners = partnerService.getPartnersByServiceTermId(serviceId, term);
         } else {
             partners = partnerService.getPartnersByServiceId(serviceId);
         }
-
-        try {
-            response.getWriter().flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         for (Partner partner : partners) {
             partner.setFeedbacks(partnerService.getFeedbacks(partner.getId()));
             partner.setImgpath(request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + partner.getImgId());
             partner.setServices(partnerService.getPartnerServiceDetailsByPartner(partner.getId()));
-
             partner.setPhotoDtos(new ArrayList<>());
             for (PhotoDto photoDto : partnerService.getPhotosByParentId(partner.getId())) {
                 photoDto.setImage_path(request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + photoDto.getId());
                 partner.getPhotoDtos().add(photoDto);
             }
         }
-        String partnersString = JsonConverter.toJson(new JsonMapBuilder()
-                .add("partners", partners)
-                .build());
-        try {
-            response.getWriter().write(partnersString);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return new ResponseEntity<>(partners, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/filteredpartnersbyradius/{serviceId}/{radius}/{latitude}/{longitude}", method = RequestMethod.GET, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -558,6 +440,14 @@ public class PartnerController {
 
     private String getBasePathOfResources() {
         return new File(".").getAbsoluteFile().getParentFile().getPath();
+    }
+
+    private Map<String, String> constructMapFromErrors(Errors errors){
+        Map<String, String> errorsMap =  new HashMap<>();
+        errors.getAllErrors().forEach(objectError -> {
+            errorsMap.put(objectError.getCode(), objectError.getDefaultMessage());
+        });
+        return errorsMap;
     }
 
 
