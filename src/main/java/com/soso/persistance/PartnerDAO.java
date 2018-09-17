@@ -61,7 +61,7 @@ public class PartnerDAO {
         paramMap.put("_isAdmin", false);
         paramMap.put("_serviceId", item.getServiceId());
         paramMap.put("_username", item.getUsername());
-        paramMap.put("_password", BaseSecurity.getMd5Version(item.getPassword()));
+        paramMap.put("_password", BaseSecurity.getEncodedVersion(item.getPassword()));
         paramMap.put("_reservable", item.isReservable());
 
         return getNamedParameterJdbcOperations().queryForObject(createUserQuery, paramMap, Integer.class);
@@ -132,7 +132,7 @@ public class PartnerDAO {
         try {
             Map<String, Object> paramMap = new HashMap<>();
             paramMap.put("telephone", telephone);
-            paramMap.put("password", BaseSecurity.getMd5Version(password));
+            paramMap.put("password", BaseSecurity.getEncodedVersion(password));
             return getNamedParameterJdbcOperations().queryForObject(SIGN_IN_PARTNER_QUERY, paramMap, Integer.class);
         } catch (EmptyResultDataAccessException ex) {
             return null;
