@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
  */
 public class AppModeResolver {
     //@Todo: read it from properties
-    private final String mode = "DEVELOPMENT";
+    private final String mode = "PRODUCTION";
 
     public boolean isLocalMode(){
         return mode.equals("DEVELOPMENT");

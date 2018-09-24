@@ -72,7 +72,23 @@ public class AuthController {
         } else {
             return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
         }
+    }
+
+
+
+    @RequestMapping(value = "/signuppartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity registerPartner(@RequestBody Partner partner,
+                                          @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
+                                          Errors errors) throws IOException {
+        partnerValidator.validateNewPartner(partner, language, errors);
+        if (!errors.hasErrors()) {
+            Integer newPartnerId = partnerService.addPartner(partner);
+            return new ResponseEntity(newPartnerId, HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
         }
+    }
+
 
     private Map<String, String> constructMapFromErrors(Errors errors){
         Map<String, String> errorsMap =  new HashMap<>();

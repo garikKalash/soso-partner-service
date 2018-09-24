@@ -19,10 +19,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.List;
 
 /**
  * Created by Garik Kalashyan on 3/4/2017.
@@ -177,7 +179,6 @@ public class PartnerController {
     @RequestMapping(value = "/uploadAccountImage", method = RequestMethod.POST, consumes = {"multipart/mixed", "multipart/form-data"})
     public String uploadAccountImage(@RequestParam("file") MultipartFile file, @RequestParam("id") Integer partnerId,
                                      RedirectAttributes redirectAttributes) throws IOException {
-
         Partner partner = partnerService.getPartnerById(partnerId);
         System.out.println("***** --> Initializing file with name " + getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + " <--  *****");
         File directory = new File(getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS);
@@ -198,14 +199,29 @@ public class PartnerController {
             Integer idOfNewPhoto = partnerService.savePhotoToPartnier(null, newLogoPath);
             partnerService.updatePartnerLogo(idOfNewPhoto, partnerId);
             System.out.println("***** --> Transfering file with name " + newLogoPath + " <--  *****");
-            file.transferTo(new File(getBasePathOfResources() + newLogoPath));
-            redirectAttributes.addFlashAttribute("Your account image is changed successfully!");
+            BufferedImage image = ImageIO.read(file.getInputStream());
+            image = resizeImage(image, 200, 200);
+            ImageIO.write(image,"jpg", new File(getBasePathOfResources() + newLogoPath));
         }
         return "redirect:/";
     }
 
+    private BufferedImage resizeImage(final Image image, int width, int height) {
+        final BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        final Graphics2D graphics2D = bufferedImage.createGraphics();
+        graphics2D.setComposite(AlphaComposite.Src);
+        //below three lines are for RenderingHints for better image quality at cost of higher processing time
+        graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        graphics2D.setRenderingHint(RenderingHints.KEY_RENDERING,RenderingHints.VALUE_RENDER_QUALITY);
+        graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics2D.drawImage(image, 0, 0, width, height, null);
+        graphics2D.dispose();
+        return bufferedImage;
+    }
+
 
     @RequestMapping(value = "/partnerphoto/{photoId}", method = RequestMethod.GET)
+    @ResponseBody
     public byte[] getPhotoById(@PathVariable(value = "photoId") Integer photoId, HttpServletResponse response) throws IOException {
         String imgPath = partnerService.getPhotoById(photoId);
         response.setContentType(MediaType.IMAGE_JPEG_VALUE);
@@ -324,38 +340,8 @@ public class PartnerController {
     }
 
 
-    @RequestMapping(value = "/addpartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity registerPartner(@RequestBody Partner partner,
-                                @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
-                                Errors errors) throws IOException {
-        partnerValidator.validateNewPartner(partner, language, errors);
-        if (!errors.hasErrors()) {
-            Integer newPartnerId = partnerService.addPartner(partner);
-            return new ResponseEntity(newPartnerId, HttpStatus.CREATED);
-        } else {
-            return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
-        }
-    }
 
 
-    @RequestMapping(value = "/signinpartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity signin(@RequestBody Partner partner,
-                       @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
-                       Errors errors) throws IOException {
-        partnerValidator.validateForSignin(partner, language, errors);
-
-        if (!errors.hasErrors()) {
-
-            Integer partnerId = partnerService.signInPartner(partner.getTelephone(), partner.getPassword());
-            if (partnerId != null) {
-                return new ResponseEntity(partnerId, HttpStatus.OK);
-            } else {
-                return new ResponseEntity(-1, HttpStatus.NO_CONTENT);
-            }
-        } else {
-           return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
-        }
-    }
 
     @RequestMapping(value = "/addservicedetailtopartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Integer> addServiceDetailToPartner(@RequestBody PartnerServiceDetail partnerServiceDetail, HttpServletResponse response) throws IOException {
