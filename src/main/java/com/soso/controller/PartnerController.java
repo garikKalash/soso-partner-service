@@ -80,13 +80,13 @@ public class PartnerController {
     }
 
     @RequestMapping(value = "/saveEditedAddress", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity saveEditedAddress(@RequestBody Partner partner,
+    public ResponseEntity saveEditedAddress(@RequestBody Address address,
                                   @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
                                   Errors errors) throws IOException {
-        partnerValidator.validateEditedAddress(partner, language, errors);
+        partnerValidator.validateEditedAddress(address, language, errors);
         if(!errors.hasErrors()){
-            partnerService.saveEditedAddress(partner.getId(), partner.getLatitude(), partner.getLongitude(), partner.getAddress());
-            return new ResponseEntity("edited", HttpStatus.OK);
+            partnerService.saveEditedAddress(address.getPartnerId(), address.getLatitude(), address.getLongitude(), address.getAddress());
+            return new ResponseEntity(address, HttpStatus.OK);
         }else{
             return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
         }
@@ -153,47 +153,49 @@ public class PartnerController {
     }
 
     @RequestMapping(value = "/addImageToPartnier", method = RequestMethod.POST, consumes = {"multipart/form-data"})
-    public void addImageToPartnier(@RequestParam("file") CommonsMultipartFile file, @RequestParam("id") Integer partnerId, RedirectAttributes redirectAttributes) {
+    public ResponseEntity<PhotoDto> addImageToPartnier(@RequestParam("file") CommonsMultipartFile file,
+                                                     @RequestParam("id") Integer partnerId,
+                                                     HttpServletRequest request) {
         System.out.println("***** --> Initializing file with name " + getBasePathOfResources()+ RELATIVE_PATH_FOR_UPLOADS +" <--  *****");
         File directory = new File(getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS);
-        String photoPath = null;
-        if (directory.exists() && directory.isDirectory()) {
-            System.out.println("***** --> Directory is existed " + getBasePathOfResources()+ RELATIVE_PATH_FOR_UPLOADS +" <--  *****");
-            photoPath = RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
-        } else if (directory.mkdirs()) {
-            System.out.println("***** --> Creating file with name " + getBasePathOfResources()+ RELATIVE_PATH_FOR_UPLOADS +" <--  *****");
-            photoPath = RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
-        }
-
+        String photoPath = getPath(directory, file.getOriginalFilename());
+        PhotoDto newPhotoDto = null;
         try {
             System.out.println("***** --> Transfering file with path " + photoPath +" <--  *****");
             file.transferTo(new File(getBasePathOfResources() + photoPath));
-            partnerService.savePhotoToPartnier(partnerId, photoPath);
+            Integer newPhotoId = partnerService.savePhotoToPartnier(partnerId, photoPath);
+            String newPathForPhoto = request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + newPhotoId;
+            newPhotoDto = new PhotoDto(newPhotoId, partnerId,newPathForPhoto);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return new ResponseEntity<>(newPhotoDto, HttpStatus.OK);
+    }
 
+    private String getPath(File directory, String originalFilename) {
+        if (directory.exists() && directory.isDirectory()) {
+            System.out.println("***** --> Directory is existed " + getBasePathOfResources()+ RELATIVE_PATH_FOR_UPLOADS +" <--  *****");
+            return RELATIVE_PATH_FOR_UPLOADS + originalFilename;
+        } else if (directory.mkdirs()) {
+            System.out.println("***** --> Creating file with name " + getBasePathOfResources()+ RELATIVE_PATH_FOR_UPLOADS +" <--  *****");
+            return RELATIVE_PATH_FOR_UPLOADS + originalFilename;
+        }
+        return null;
     }
 
 
     @RequestMapping(value = "/uploadAccountImage", method = RequestMethod.POST, consumes = {"multipart/mixed", "multipart/form-data"})
-    public String uploadAccountImage(@RequestParam("file") MultipartFile file, @RequestParam("id") Integer partnerId,
+    @ResponseBody
+    public ResponseEntity<String> uploadAccountImage(@RequestParam("file") MultipartFile file, @RequestParam("id") Integer partnerId,
                                      RedirectAttributes redirectAttributes) throws IOException {
         Partner partner = partnerService.getPartnerById(partnerId);
         System.out.println("***** --> Initializing file with name " + getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + " <--  *****");
         File directory = new File(getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS);
-        String newLogoPath = null;
-        if (directory.exists() && directory.isDirectory()) {
-            System.out.println("***** --> Directory is existed " + getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + " <--  *****");
-            newLogoPath = RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
-        } else if (directory.mkdirs()) {
-            System.out.println("***** --> Creating file with name " + getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + " <--  *****");
-            newLogoPath = RELATIVE_PATH_FOR_UPLOADS + file.getOriginalFilename();
-        }
+        String newLogoPath = getPath(directory, file.getOriginalFilename());
         if (newLogoPath != null) {
             if (partner.getImgId() != null) {
                 String oldImgPath = partnerService.getPhotoById(partner.getImgId());
-                partnerService.deletePartnerOldLogoFromFiles(getBasePathOfResources() + oldImgPath);
+                partnerService.deletePhotoFromFiles(getBasePathOfResources() + oldImgPath);
                 partnerService.deletePhotoById(partner.getImgId());
             }
             Integer idOfNewPhoto = partnerService.savePhotoToPartnier(null, newLogoPath);
@@ -203,7 +205,7 @@ public class PartnerController {
             image = resizeImage(image, 200, 200);
             ImageIO.write(image,"jpg", new File(getBasePathOfResources() + newLogoPath));
         }
-        return "redirect:/";
+        return new ResponseEntity<>("OK", HttpStatus.OK);
     }
 
     private BufferedImage resizeImage(final Image image, int width, int height) {
@@ -226,12 +228,14 @@ public class PartnerController {
         String imgPath = partnerService.getPhotoById(photoId);
         response.setContentType(MediaType.IMAGE_JPEG_VALUE);
         if(imgPath != null){
-        return IOUtils.toByteArray(getImageInputStreamByImgPath(getBasePathOfResources() + imgPath));
+            return IOUtils.toByteArray(getImageInputStreamByImgPath(getBasePathOfResources() + imgPath));
         }
         return null;
     }
 
     private InputStream getImageInputStreamByImgPath(String imagePath) throws IOException {
+        imagePath = imagePath.replaceAll("/", File.separator);
+        imagePath = imagePath.replaceAll("\\\\", File.separator);
         BufferedImage image = ImageIO.read(new File(imagePath));
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         ImageIO.write(image, "jpg", os);
@@ -239,10 +243,8 @@ public class PartnerController {
     }
 
     @RequestMapping(value = "/partnerPhotos/{partnerId}", method = RequestMethod.GET)
-    public ResponseEntity<List<PhotoDto>> getPartnerPhotos(@PathVariable(value = "partnerId") Integer partnerId, HttpServletResponse response, HttpServletRequest request) throws IOException {
+    public ResponseEntity<List<PhotoDto>> getPartnerPhotos(@PathVariable(value = "partnerId") Integer partnerId, HttpServletRequest request) throws IOException {
         List<PhotoDto> photoDtos = partnerService.getPhotosByParentId(partnerId);
-        response.getWriter().flush();
-
         for (PhotoDto photoDto : photoDtos) {
             photoDto.setImage_path(request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + photoDto.getId());
         }
@@ -344,7 +346,7 @@ public class PartnerController {
 
 
     @RequestMapping(value = "/addservicedetailtopartner", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Integer> addServiceDetailToPartner(@RequestBody PartnerServiceDetail partnerServiceDetail, HttpServletResponse response) throws IOException {
+    public ResponseEntity<Integer> addServiceDetailToPartner(@RequestBody PartnerServiceDetail partnerServiceDetail) throws IOException {
         Integer serviceId = partnerService.addServiceDetailToPartner(partnerServiceDetail.getPartnerId(), partnerServiceDetail.getServiceId(), partnerServiceDetail.getDefaultduration(), partnerServiceDetail.getPrice());
         return new ResponseEntity<>(serviceId, HttpStatus.CREATED);
     }
@@ -362,7 +364,15 @@ public class PartnerController {
 
     @RequestMapping(value = "/deletephotofrompartner/{id}", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Boolean> deletePhotoFromPartner(@PathVariable("id") Integer id) throws IOException {
-        return new ResponseEntity<>(partnerService.deletePhotoById(id) != 0, HttpStatus.OK);
+        String imgPath = partnerService.getPhotoById(id);
+        imgPath = imgPath.replaceAll("/", File.separator);
+        imgPath = imgPath.replaceAll("\\\\", File.separator);
+        if(partnerService.deletePhotoById(id) != 0){
+            partnerService.deletePhotoFromFiles(getBasePathOfResources() + imgPath);
+            return new ResponseEntity<>(true, HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>(false, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @RequestMapping(value = "/getservicedetailsforpartner/{partnerId}", method = RequestMethod.GET)

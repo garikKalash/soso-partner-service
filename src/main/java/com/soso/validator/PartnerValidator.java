@@ -1,5 +1,6 @@
 package com.soso.validator;
 
+import com.soso.models.Address;
 import com.soso.models.MessageDto;
 import com.soso.models.Partner;
 import com.soso.service.PartnerService;
@@ -34,8 +35,8 @@ public class PartnerValidator {
         }
     }
 
-    public void validateEditedAddress(Partner partner,String language, Errors errors){
-        if(isInvalidEditedAddress(partner)){
+    public void validateEditedAddress(Address address, String language, Errors errors){
+        if(isInvalidEditedAddress(address)){
             addMessageToErrors("invalideditedaddress", language,  errors);
         }
 
@@ -77,15 +78,16 @@ public class PartnerValidator {
 
 
     }
+
     private boolean isInvalidMainInfo(Partner partner){
         return partner.getTelephone().isEmpty() || partner.getAddress().isEmpty();
     }
 
 
-    private boolean isInvalidEditedAddress(Partner partner){
-        return partner.getLongitude() == null ||
-               partner.getLatitude() == null  ||
-               partner.getAddress().isEmpty() ;
+    private boolean isInvalidEditedAddress(Address address){
+        return address.getLongitude() == null ||
+               address.getLatitude() == null  ||
+               address.getAddress().isEmpty() ;
     }
 
 

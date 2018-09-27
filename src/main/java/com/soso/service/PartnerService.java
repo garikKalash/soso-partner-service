@@ -73,7 +73,7 @@ public class PartnerService extends BaseRestClient {
     }
 
 
-    public boolean deletePartnerOldLogoFromFiles(String oldLogoPath) {
+    public boolean deletePhotoFromFiles(String oldLogoPath) {
         return new File(oldLogoPath).delete();
     }
 

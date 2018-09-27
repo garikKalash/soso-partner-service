@@ -113,7 +113,7 @@ public class PartnerDAO {
     public List<PartnerServiceDetail> getAllServicesByPartner(Integer partnerId) {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("partnerid", partnerId);
-        return getNamedParameterJdbcOperations().query("SELECT * FROM public.f_partnersubservices WHERE partnerid = :partnerid", paramMap, new BeanPropertyRowMapper<>(PartnerServiceDetail.class));
+        return getNamedParameterJdbcOperations().query("SELECT * FROM public.f_partnersubservices WHERE partnerid = :partnerid ", paramMap, new BeanPropertyRowMapper<>(PartnerServiceDetail.class));
     }
 
     public Integer deletePartnerService(Integer itemId) {
