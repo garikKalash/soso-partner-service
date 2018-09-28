@@ -53,7 +53,7 @@ public class PartnerDAO {
     }
 
     public Integer addPartner(Partner item) {
-        String createUserQuery = "SELECT addpartner ( :_name,:_telephone,:_isAdmin,:_serviceId,:_username,:_password,:_reservable)";
+        String createUserQuery = "SELECT addpartner ( :_name,:_telephone,:_isAdmin,:_serviceId,:_username,:_password,:_reservable,:_working_start_date,:_working_end_date)";
 
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("_name", item.getName());
@@ -63,6 +63,8 @@ public class PartnerDAO {
         paramMap.put("_username", item.getUsername());
         paramMap.put("_password", BaseSecurity.getEncodedVersion(item.getPassword()));
         paramMap.put("_reservable", item.isReservable());
+        paramMap.put("_working_start_date", item.isReservable());
+        paramMap.put("_working_end_date", item.isReservable());
 
         return getNamedParameterJdbcOperations().queryForObject(createUserQuery, paramMap, Integer.class);
 
