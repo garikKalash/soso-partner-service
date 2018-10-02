@@ -187,13 +187,14 @@ public class PartnerController {
     @RequestMapping(value = "/uploadAccountImage", method = RequestMethod.POST, consumes = {"multipart/mixed", "multipart/form-data"})
     @ResponseBody
     public ResponseEntity<String> uploadAccountImage(@RequestParam("file") MultipartFile file, @RequestParam("id") Integer partnerId,
-                                     RedirectAttributes redirectAttributes) throws IOException {
+                                     HttpServletRequest request) throws IOException {
         Partner partner = partnerService.getPartnerById(partnerId);
         System.out.println("***** --> Initializing file with name " + getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS + " <--  *****");
+        String urlOfNewAccountImage = null;
         File directory = new File(getBasePathOfResources() + RELATIVE_PATH_FOR_UPLOADS);
         String newLogoPath = getPath(directory, file.getOriginalFilename());
         if (newLogoPath != null) {
-            if (partner.getImgId() != null) {
+            if (partner.getImgId() != null && partner.getImgId() != 39) { // 39 is the id of default image for the new account
                 String oldImgPath = partnerService.getPhotoById(partner.getImgId());
                 partnerService.deletePhotoFromFiles(getBasePathOfResources() + oldImgPath);
                 partnerService.deletePhotoById(partner.getImgId());
@@ -204,8 +205,10 @@ public class PartnerController {
             BufferedImage image = ImageIO.read(file.getInputStream());
             image = resizeImage(image, 200, 200);
             ImageIO.write(image,"jpg", new File(getBasePathOfResources() + newLogoPath));
+            urlOfNewAccountImage = request.getRequestURL().toString().replaceAll(request.getRequestURI(), "") + "/partner/partnerphoto/" + idOfNewPhoto;
+
         }
-        return new ResponseEntity<>("OK", HttpStatus.OK);
+        return new ResponseEntity<>(urlOfNewAccountImage, HttpStatus.OK);
     }
 
     private BufferedImage resizeImage(final Image image, int width, int height) {
