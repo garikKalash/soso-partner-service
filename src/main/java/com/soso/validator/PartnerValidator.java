@@ -33,6 +33,10 @@ public class PartnerValidator {
         if (partner.getPassword() == null || partner.getPassword().isEmpty() || partner.getPassword().length() < 3) {
             addMessageToErrors("invalidpassword", language, errors);
         }
+        Partner loadedPartner = partnerService.getPartnerByTelephone(partner.getTelephone());
+        if (loadedPartner == null) {
+            addMessageToErrors("invalidpasswordorphone", language ,errors);
+        }
     }
 
     public void validateEditedAddress(Address address, String language, Errors errors){
@@ -68,7 +72,7 @@ public class PartnerValidator {
 
     }
 
-    private void addMessageToErrors(String globKey, String language, Errors errors){
+    public void addMessageToErrors(String globKey, String language, Errors errors){
         MessageDto messageDto =  commonDataService.getMessageByGlobKey(globKey);
         if(language.compareToIgnoreCase("hay") == 0){
             errors.reject(globKey, messageDto.getHay());

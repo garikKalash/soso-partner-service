@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.sql.Date;
 import java.util.List;
 
 /**
@@ -32,8 +32,8 @@ public class Partner {
     private List<Feedback> feedbacks;
     private List<String> followers;
     private List<PartnerServiceDetail> services;
-    private Date WorkingStartDate;
-    private Date WorkingEndDate;
+    private Date workingStartDate;
+    private Date workingEndDate;
 
     private boolean reservable;
 

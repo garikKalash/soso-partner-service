@@ -55,20 +55,14 @@ public class AuthController {
                                  @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String language,
                                  Errors errors) throws IOException {
         partnerValidator.validateForSignin(partner, language, errors);
-
         if (!errors.hasErrors()) {
-
-            Partner loadedPartner = partnerService.getPartnerByTelephone(partner.getTelephone());
-            if (loadedPartner != null) {
-               if(passwordEncoder.matches(partner.getPassword(), loadedPartner.getPassword())){
+                Partner loadedPartner = partnerService.getPartnerByTelephone(partner.getTelephone());
+                if(passwordEncoder.matches(partner.getPassword(), loadedPartner.getPassword())){
                   return new ResponseEntity(loadedPartner, HttpStatus.OK);
                }else{
-                  return new ResponseEntity("Incorrect details", HttpStatus.UNAUTHORIZED);
+                  partnerValidator.addMessageToErrors("invalidpasswordorphone", language, errors);
+                  return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.UNAUTHORIZED);
                }
-
-            } else {
-                return new ResponseEntity(-1, HttpStatus.NO_CONTENT);
-            }
         } else {
             return new ResponseEntity(constructMapFromErrors(errors), HttpStatus.BAD_REQUEST);
         }

@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,8 +64,8 @@ public class PartnerDAO {
         paramMap.put("_username", item.getUsername());
         paramMap.put("_password", BaseSecurity.getEncodedVersion(item.getPassword()));
         paramMap.put("_reservable", item.isReservable());
-        paramMap.put("_working_start_date", item.isReservable());
-        paramMap.put("_working_end_date", item.isReservable());
+        paramMap.put("_working_start_date", new Time(item.getWorkingStartDate().getTime()));
+        paramMap.put("_working_end_date", new Time(item.getWorkingEndDate().getTime()));
 
         return getNamedParameterJdbcOperations().queryForObject(createUserQuery, paramMap, Integer.class);
 
@@ -116,6 +117,13 @@ public class PartnerDAO {
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("partnerid", partnerId);
         return getNamedParameterJdbcOperations().query("SELECT * FROM public.f_partnersubservices WHERE partnerid = :partnerid ", paramMap, new BeanPropertyRowMapper<>(PartnerServiceDetail.class));
+    }
+
+    public PartnerServiceDetail getServiceDetailByPartnerAndByService(Integer partnerId, Integer serviceId) {
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put("partnerid", partnerId);
+        paramMap.put("serviceid", serviceId);
+        return getNamedParameterJdbcOperations().queryForObject("SELECT * FROM public.f_partnersubservices WHERE partnerid = :partnerid AND serviceid = :serviceid", paramMap, new BeanPropertyRowMapper<>(PartnerServiceDetail.class));
     }
 
     public Integer deletePartnerService(Integer itemId) {

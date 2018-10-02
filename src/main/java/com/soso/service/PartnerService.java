@@ -169,6 +169,10 @@ public class PartnerService extends BaseRestClient {
         return partnerDAO.getAllServicesByPartner(itemId);
     }
 
+    public PartnerServiceDetail getServiceDetailByPartnerAndByService(Integer itemId, Integer serviceId) {
+        return partnerDAO.getServiceDetailByPartnerAndByService(itemId, serviceId);
+    }
+
     public Follower getFollowerById(Integer id) {
         return partnerDAO.getFollowerById(id);
     }
@@ -206,9 +210,9 @@ public class PartnerService extends BaseRestClient {
         long startTimeInMs = request.getStartTime().getTime();
         Date endTime = new Date(startTimeInMs + (request.getDuration() * 1000 * 60));
 
-        for (Request _request : partnerDAO.getReservationsByPartnerId(request.getPartnerId(), 1)) {
+        for (Request _request : partnerDAO.getReservationsByPartnerId(request.getPartnerId(), 2)) {
             long _startTimeInMs = _request.getStartTime().getTime();
-            Date _afterAddingMins = new Date(startTimeInMs + (request.getDuration() * 1000 * 60));
+            Date _afterAddingMins = new Date(_startTimeInMs + (_request.getDuration() * 1000 * 60));
 
             if ((startTimeInMs < _startTimeInMs && endTime.getTime() > _startTimeInMs)
                     || (startTimeInMs > _startTimeInMs && startTimeInMs < _afterAddingMins.getTime())) {

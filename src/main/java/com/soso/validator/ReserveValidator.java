@@ -18,7 +18,7 @@ public class ReserveValidator {
     private PartnerService partnerService;
 
     public void validateReserve(Request request, String lang ,Errors errors){
-         if (request.getStatus() != 2 && (request.getDuration() == null || request.getDuration() <= 0)) {
+         if (request.getDuration() == null || request.getDuration() <= 0) {
              MessageDto messageDto = commonDataService.getMessageByGlobKey("invalidduration");
              if(lang.compareToIgnoreCase("hay") == 0){
                  errors.reject("isWrongDuration", messageDto.getHay());

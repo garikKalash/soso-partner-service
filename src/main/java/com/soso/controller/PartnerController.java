@@ -325,7 +325,7 @@ public class PartnerController {
 
     @RequestMapping(value = "/deletereserve/{reserveId}", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Boolean> deleteReserveToPartnier(@PathVariable("reserveId") Integer reserveId, HttpServletResponse response) throws IOException {
-        return new ResponseEntity<>(partnerService.deleteReservationById(reserveId) > 1, HttpStatus.OK);
+        return new ResponseEntity<>(partnerService.deleteReservationById(reserveId) > 0, HttpStatus.OK);
     }
 
 
@@ -380,6 +380,11 @@ public class PartnerController {
         return new ResponseEntity<>(partnerService.getPartnerServiceDetailsByPartner(id), HttpStatus.OK);
     }
 
+    @RequestMapping(value = "/getservicedetails/partner/{partnerId}/service/{serviceId}", method = RequestMethod.GET)
+    public ResponseEntity<PartnerServiceDetail> getServiceDetailForPartner(@PathVariable("partnerId") Integer id, @PathVariable("serviceId") Integer serviceId) throws IOException {
+        return new ResponseEntity<>(partnerService.getServiceDetailByPartnerAndByService(id, serviceId), HttpStatus.OK);
+    }
+
     @RequestMapping(value = "/getautocompletedrequests", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity<List> getAutocompletedRequestsAsEvents() throws IOException {
@@ -427,11 +432,6 @@ public class PartnerController {
     }
 
 
-    private boolean isUnauthorizedRequestType(HttpServletRequest request) {
-        return request.getRequestURI().equals("/partner/signinpartner/")
-                || request.getRequestURI().equals("/partner/addpartner/")
-                || request.getRequestURI().contains("/partner/partnerphoto/");
-    }
 
 
     private String getBasePathOfResources() {
